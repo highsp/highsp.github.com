@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="zh">
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		
+		<meta name="description" content="Java并行编程笔记2: Monitor">
+		
+		<meta name="author" content="">
+		
+		<meta name="keywords" content="JMM,Java内存模型,并行编程">
+		
+		<link rel="shortcut icon" href="/assets/images//favicon.ico">
+
+		
+			
+		
+		
+
+
+		<title>Java并行编程笔记2: Monitor</title>
+
+		<link rel='alternate' type="application/rss+xml" title="RSS 2.0 - Articiles" href="http://highsp.cn/rss.xml">
+		<link rel='alternate' type="application/atom+xml" title="Atom - Articiles" href="http://highsp.cn/atom.xml">
+		<!-- Bootstrap core CSS -->
+		<link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+		<link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap-theme.min.css" rel="stylesheet">
+
+		<!-- Custom styles for this template -->
+		<link href="/assets/css//main.css" rel="stylesheet">
+
+		<!-- Just for debugging purposes. Don't actually copy this line! -->
+		<!--[if lt IE 9]><script src="/assets/js//ie8-responsive-file-warning.js"></script><![endif]-->
+
+		<!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+		<!--[if lt IE 9]>
+		<script src="//oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+		<script src="//oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+		<![endif]-->
+		
+	</head>
+
+	<body>
+		<!-- Navigation bar -->
+		<div class="navbar blue-bg navbar-fixed-top" role="navigation">
+			<div class="container">
+				<div class="navbar-header">
+					<button type="button" class="navbar-toggle label-primary" data-toggle="collapse" data-target=".navbar-collapse">
+						<span class="sr-only">Toggle navigation</span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+					</button>
+
+					
+					
+
+
+					<a class="navbar-brand" href="/#">带码的世界</a>
+				</div>
+				<div class="navbar-collapse collapse">
+					<ul class="nav navbar-nav">
+						
+						<li><a href="/">首页</a></li>
+						
+
+						
+
+						
+							
+								
+							
+
+							
+								
+								
+
+
+								<li class=""><a href="/algorithm">算法理论 <span class="badge">6</span></a></li>
+							
+						
+							
+								
+							
+
+							
+								
+									
+									
+
+
+									<li class="dropdown active">
+									<a href="#" class="dropdown-toggle" data-toggle="dropdown">带码的世界 <span class="badge">11</span><b class="caret"></b></a>
+									<ul class="dropdown-menu">
+										
+										
+											
+												
+												
+
+
+
+												
+												
+												
+
+
+												<li><a href="/code/java">java <span class="badge">8</span></a></li>
+												
+											
+										
+											
+											
+										
+											
+											
+										
+											
+											
+										
+											
+											
+										
+											
+												
+												
+
+
+
+												
+												
+												
+
+
+												<li><a href="/code/algorithm">算法理论 <span class="badge">6</span></a></li>
+												
+											
+										
+											
+											
+										
+											
+											
+										
+											
+											
+										
+											
+											
+										
+											
+											
+										
+									</ul>
+									</li>
+								
+							
+						
+							
+								
+							
+
+							
+								
+							
+						
+							
+								
+							
+
+							
+								
+								
+
+
+								<li class=""><a href="/internet">互联网 <span class="badge">1</span></a></li>
+							
+						
+							
+								
+							
+
+							
+								
+								
+
+
+								<li class=""><a href="/scalability">可扩展性 <span class="badge">2</span></a></li>
+							
+						
+					</ul>
+					
+	
+			
+ 			<form class="navbar-form navbar-right" role="form" action="https://www.google.com.hk/search" target="_blank">
+	<div class="form-group">
+	<input type="text" class="form-control" placeholder="关键字" name="query" autocomplete="off">
+	<input type="hidden" value="" name="as_sitesearch"> 
+	</div>
+	<button class="btn btn-default" type="submit">搜索</button>
+</form>
+
+	
+
+
+					
+				</div><!--/.navbar-collapse -->
+			</div>
+		</div>
+
+		<!-- main page -->
+		<div class="container main-page">
+			<div class="row">
+				<div class="col-sm-8">
+					<h1 class="page-header">Java并行编程笔记2: Monitor
+	<br>
+	
+	
+	<span class="label label-info font-h6">
+	<date class="date-pub" title="2014-03-14T00:00:00+08:00" datetime="2014-03-14T00:00:00+08:00" pubdate>
+	<span class="month"><abbr>March</abbr></span>
+	<span class="day">14</span>
+	<span class="year">2014</span>
+	</date>
+	
+</span>
+
+</h1>
+<div class="lead">
+<h2>1. 什么是Monitor？</h2>
+
+<p>Monitor其实是一种同步工具，也可以说是一种同步机制，它通常被描述为一个
+对象，主要特点是：</p>
+
+<ul>
+<li>对象的所有方法都被“互斥”的执行。好比一个Monitor只有一个运行“许可”，任
+一个线程进入任何一个方法都需要获得这个“许可”，离开时把许可归还。</li>
+<li>通常提供singal机制：允许正持有“许可”的线程暂时放弃“许可”，等待某个谓词
+成真（条件变量），而条件成立后，当前进程可以“通知”正在等待这个条件变量的
+线程，让他可以重新去获得运行许可。</li>
+</ul>
+
+<p>Monitor对象可以被多线程安全地访问。关于“互斥”与“为什么要互斥”，我
+就不傻X兮兮解释了；而关于Monitor的singal机制，历史上曾经出现过两大门派，分
+别是Hoare派和Mesa派（上过海波老师OS课的SS同学应该对这个有印象），我还是用
+我的理解通俗地庸俗地解释一下：</p>
+
+<ul>
+<li>Hoare派的singal机制江湖又称“Blocking condition variable”，特点是，当“发
+通知”的线程发出通知后，立即失去许可，并“亲手”交给等待者，等待者运行完毕
+后再将许可交还通知者。在这种机制里，等待者拿到许可后，谓词肯定为真——
+也就是说等待者不必再次检查条件成立与否，所以对条件的判断可以使用“if”，不
+必“while”</li>
+<li>Mesa派的signal机制又称“Non-Blocking condition variable”， 与Hoare不同，
+通知者发出通知后，并不立即失去许可，而是把闻风前来等待者安排在ready queue
+里，等到schedule时有机会去拿到“许可”。这种机制里，等待者拿到许可后不能确
+定在这个时间差里是否有别的等待者进入过Monitor，因此不能保证谓词一定为真，
+所以对条件的判断必须使用“while”</li>
+</ul>
+
+<p>这两种方案可以说各有利弊，但Mesa派在后来的盟主争夺中渐渐占了上风，被大
+多数实现所采用，有人给这种signal另外起了个别名叫“notify”，想必你也知道，
+Java采取的就是这个机制。</p>
+
+<h2>2. Monitor与Java不得不说的故事</h2>
+
+<p>子曰：“Java对象是天生的Monitor。”每一个Java对象都有成为Monitor的“潜
+质”。这是为什么？因为在Java的设计中，每一个对象自打娘胎里出来，就带了一把
+看不见的锁，通常我们叫“内部锁”，或者“Monitor锁”，或者“Intrinsic lock
+”。为了装逼起见，我们就叫它Intrinsic lock吧。有了这个锁的帮助，只要把类的
+所有对象方法都用synchronized关键字修饰，并且所有域都为私有（也就是只能通过
+方法访问对象状态），就是一个货真价实的Monitor了。比如，我们举一个大俗例吧：</p>
+
+<div class="highlight"><pre><code class="language-java" data-lang="java"><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Account</span> <span class="o">{</span>
+    <span class="kd">private</span> <span class="kt">int</span> <span class="n">balance</span><span class="o">;</span>
+    
+    <span class="kd">public</span> <span class="nf">Account</span><span class="o">(</span><span class="kt">int</span> <span class="n">balance</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">balance</span> <span class="o">=</span> <span class="n">balance</span><span class="o">;</span>
+    <span class="o">}</span>
+    
+    <span class="kd">synchronized</span> <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">withdraw</span><span class="o">(</span><span class="kt">int</span> <span class="n">amount</span><span class="o">){</span>
+        <span class="k">if</span><span class="o">(</span><span class="n">balance</span><span class="o">&lt;</span><span class="n">amount</span><span class="o">)</span>
+            <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+        <span class="n">balance</span> <span class="o">-=</span> <span class="n">amount</span><span class="o">;</span>
+        <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+    <span class="o">}</span>
+    
+    <span class="kd">synchronized</span> <span class="kd">public</span> <span class="kt">void</span> <span class="nf">deposit</span><span class="o">(</span><span class="kt">int</span> <span class="n">amount</span><span class="o">){</span>
+        <span class="n">balance</span> <span class="o">+=</span><span class="n">amount</span><span class="o">;</span>
+    <span class="o">}</span>
+    
+<span class="o">}</span></code></pre></div>
+
+<h2>3. synchronized关键字</h2>
+
+<p>上面我们已经看到synchronized的一种用法，用来修饰方法，表示进入该方法需
+要对Intrinsic lock加锁，离开时放锁。synchronized可以用在程序块中，显示说明
+对“哪个对象的Intrinsic lock加锁”，比如</p>
+
+<div class="highlight"><pre><code class="language-java" data-lang="java"><span class="kd">synchronized</span> <span class="kd">public</span> <span class="kt">void</span> <span class="nf">deposit</span><span class="o">(</span><span class="kt">int</span> <span class="n">amount</span><span class="o">){</span>
+    <span class="n">balance</span> <span class="o">+=</span><span class="n">amount</span><span class="o">;</span>
+<span class="o">}</span>
+
+<span class="c1">// 等价于</span>
+<span class="kd">public</span> <span class="kt">void</span> <span class="nf">deposit</span><span class="o">(</span><span class="kt">int</span> <span class="n">amount</span><span class="o">){</span>
+    <span class="kd">synchronized</span><span class="o">(</span><span class="k">this</span><span class="o">){</span>
+        <span class="n">balance</span> <span class="o">+=</span><span class="n">amount</span><span class="o">;</span>
+    <span class="o">}</span>
+<span class="o">}</span></code></pre></div>
+
+<p>这时，你可能就要问了，你不是说任何对象都有intrinsic lock么？而synchronized
+关键字又可以显示指定去锁谁，那我们是不是可以这样做：</p>
+
+<div class="highlight"><pre><code class="language-java" data-lang="java"><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Account</span> <span class="o">{</span>
+    <span class="kd">private</span> <span class="kt">int</span> <span class="n">balance</span><span class="o">;</span>
+    <span class="kd">private</span> <span class="n">Object</span> <span class="n">lock</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">Object</span><span class="o">();</span>
+    
+    <span class="kd">public</span> <span class="nf">Account</span><span class="o">(</span><span class="kt">int</span> <span class="n">balance</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">balance</span> <span class="o">=</span> <span class="n">balance</span><span class="o">;</span>
+    <span class="o">}</span>
+    
+    <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">withdraw</span><span class="o">(</span><span class="kt">int</span> <span class="n">amount</span><span class="o">){</span>
+        <span class="kd">synchronized</span> <span class="o">(</span><span class="n">lock</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">if</span><span class="o">(</span><span class="n">balance</span><span class="o">&lt;</span><span class="n">amount</span><span class="o">)</span>
+                <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+            <span class="n">balance</span> <span class="o">-=</span> <span class="n">amount</span><span class="o">;</span>
+            <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+        <span class="o">}</span>   
+    <span class="o">}</span>
+    
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">deposit</span><span class="o">(</span><span class="kt">int</span> <span class="n">amount</span><span class="o">){</span>
+        <span class="kd">synchronized</span> <span class="o">(</span><span class="n">lock</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">balance</span> <span class="o">+=</span><span class="n">amount</span><span class="o">;</span>
+        <span class="o">}</span>       
+    <span class="o">}</span>
+<span class="o">}</span></code></pre></div>
+
+<p>不用this的内部锁，而是用另外任意一个对象的内部锁来完成完全相同的任务？
+没错，完全可以。不过，需要注意的是，这时候，你实际上禁止了“客户代码加锁”
+的行为。前几天BBS上简哥有一贴提到的bug其实就是这个，这个时候使用这份代码的
+客户程序如果想当然地认为Account的同步是基于其内部锁的，并且傻X兮兮地写了类
+似下面的代码：</p>
+
+<div class="highlight"><pre><code class="language-java" data-lang="java"><span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">Account</span> <span class="n">account</span> <span class="o">=</span><span class="k">new</span> <span class="nf">Account</span><span class="o">(</span><span class="mi">1000</span><span class="o">);</span>
+        
+        <span class="c1">//some threads modifying account through Account’s methods...</span>
+        
+        <span class="kd">synchronized</span> <span class="o">(</span><span class="n">account</span><span class="o">)</span> <span class="o">{</span>
+            <span class="o">;</span><span class="c1">//blabla</span>
+        <span class="o">}</span>
+    <span class="o">}</span></code></pre></div>
+
+<p>自认为后面的同步快对account加了锁，期间的操作不会被其余通过Account方法操作
+account对象的线程所干扰，那就太悲剧了。因为他们并不相干，锁住了不同的锁。</p>
+
+<h2>4. Java中的条件变量</h2>
+
+<p>正如我们前面所说，Java采取了wait/notify机制来作为intrinsic lock 相关的
+条件变量，表示为等待某一条件成立的条件队列——说到这里顺带插一段，条件队列
+必然与某个锁相关，并且语义上关联某个谓词（条件队列、锁、条件谓词就是吉祥的
+一家）。所以，在使用wait/notify方法时，必然是已经获得相关锁了的，在进一步
+说，一个推论就是“wait/notify  方法只能出现在相应的同步块中”。如果不呢？
+就像下面一段（notify表示的谓词是“帐户里有钱啦～”）：</p>
+
+<div class="highlight"><pre><code class="language-java" data-lang="java"><span class="kd">public</span> <span class="kt">void</span> <span class="nf">deposit</span><span class="o">(</span><span class="kt">int</span> <span class="n">amount</span><span class="o">){</span>
+        <span class="n">balance</span> <span class="o">+=</span><span class="n">amount</span><span class="o">;</span>
+        <span class="n">notify</span><span class="o">();</span>
+    <span class="o">}</span>
+
+<span class="c1">//或者这样：</span>
+
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">deposit</span><span class="o">(</span><span class="kt">int</span> <span class="n">amount</span><span class="o">){</span>
+        <span class="kd">synchronized</span> <span class="o">(</span><span class="n">lock</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">balance</span> <span class="o">+=</span><span class="n">amount</span><span class="o">;</span>
+            <span class="n">notify</span><span class="o">();</span>
+        <span class="o">}</span>
+    <span class="o">}</span></code></pre></div>
+
+<p>这两段都是错的，第一段没有在同步块里，而第二段拿到的是lock的内部锁，调用的
+却是this.notify()，让人遗憾。运行时他们都会抛IllegalMonitorStateException
+异常——唉，想前一阵我参加一次笔试的时候，有一道题就是这个，让你选所给代码
+会抛什么异常，我当时就傻了，想这考得也太偏了吧，现在看看，确实是很基本的概
+念，当初被虐是压根没有理解wait/notify机制的缘故。那怎么写是对的呢？</p>
+
+<div class="highlight"><pre><code class="language-java" data-lang="java"><span class="kd">public</span> <span class="kt">void</span> <span class="nf">deposit</span><span class="o">(</span><span class="kt">int</span> <span class="n">amount</span><span class="o">){</span>
+        <span class="kd">synchronized</span> <span class="o">(</span><span class="n">lock</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">balance</span> <span class="o">+=</span><span class="n">amount</span><span class="o">;</span>
+            <span class="n">lock</span><span class="o">.</span><span class="na">notify</span><span class="o">();</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="c1">//或者（取决于你采用的锁）：</span>
+    <span class="kd">synchronized</span> <span class="kd">public</span> <span class="kt">void</span> <span class="nf">deposit</span><span class="o">(</span><span class="kt">int</span> <span class="n">amount</span><span class="o">){</span>
+        <span class="n">balance</span> <span class="o">+=</span><span class="n">amount</span><span class="o">;</span>
+        <span class="n">notify</span><span class="o">();</span>
+    <span class="o">}</span></code></pre></div>
+
+<h2>5.这就够了吗？</h2>
+
+<p>看上去，Java的内部锁和wait/notify机制已经可以满足任何同步需求了，不是
+吗？em…可以这么说，但也可以说，不那么完美。有几个问题：</p>
+
+<ul>
+<li>锁不够用</li>
+</ul>
+
+<p>有时候，我们的类里不止有一个状态，这些状态是相互独立的，如果只用同一个
+内部锁来维护他们全部，未免显得过于笨拙，会严重影响吞吐量。你马上会说，你刚
+才不是演示了用任意一个Object来做锁吗？我们多整几个Object分别加锁不就行了吗
+？没错，是可行的。但这样可能显得有些丑陋，而且Object来做锁本身就有语义不明
+确的缺点。</p>
+
+<ul>
+<li>条件变量不够用</li>
+</ul>
+
+<p>Java用wait/notify机制实际上默认给一个内部锁绑定了一个条件队列，但是，
+有时候，针对一个状态（锁），我们的程序需要两个或以上的条件队列，比如，刚才
+的Account例子，如果某个2B银行有这样的规定“一个账户存款不得多于10000元”，
+这个时候，我们的存钱需要满足“余额+要存的数目不大于10000，否则等待，直到满
+足这个限制”，取钱需要满足“余额足够，否则等待，直到有钱为止”，这里需要两
+个条件队列，一个等待“存款不溢出”，一个等待“存款足够”，这时，一个默认的
+条件队列够用么？你可能又说，够用，我们可以模仿network里的“多路复用”，一
+个队列就能当多个来使，像这样：</p>
+
+<div class="highlight"><pre><code class="language-java" data-lang="java"><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Account</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">BOUND</span> <span class="o">=</span> <span class="mi">10000</span><span class="o">;</span>
+    <span class="kd">private</span> <span class="kt">int</span> <span class="n">balance</span><span class="o">;</span>
+    
+    <span class="kd">public</span> <span class="nf">Account</span><span class="o">(</span><span class="kt">int</span> <span class="n">balance</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">balance</span> <span class="o">=</span> <span class="n">balance</span><span class="o">;</span>
+    <span class="o">}</span>
+    
+    <span class="kd">synchronized</span> <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">withdraw</span><span class="o">(</span><span class="kt">int</span> <span class="n">amount</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">InterruptedException</span>
+<span class="o">{</span>
+            <span class="k">while</span><span class="o">(</span><span class="n">balance</span><span class="o">&lt;</span><span class="n">amount</span><span class="o">)</span>
+                <span class="n">wait</span><span class="o">();</span><span class="c1">// no money, wait</span>
+            <span class="n">balance</span> <span class="o">-=</span> <span class="n">amount</span><span class="o">;</span>
+            <span class="n">notifyAll</span><span class="o">();</span><span class="c1">// not full, notify</span>
+            <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+    <span class="o">}</span>
+    
+    <span class="kd">synchronized</span> <span class="kd">public</span> <span class="kt">void</span> <span class="nf">deposit</span><span class="o">(</span><span class="kt">int</span> <span class="n">amount</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">InterruptedException</span>
+<span class="o">{</span>
+            <span class="k">while</span><span class="o">(</span><span class="n">balance</span><span class="o">+</span><span class="n">amount</span> <span class="o">&gt;</span><span class="n">BOUND</span><span class="o">)</span>
+                <span class="n">wait</span><span class="o">();</span><span class="c1">//full, wait</span>
+            <span class="n">balance</span> <span class="o">+=</span><span class="n">amount</span><span class="o">;</span>
+            <span class="n">notifyAll</span><span class="o">();</span><span class="c1">// has money, notify</span>
+    <span class="o">}</span>
+<span class="o">}</span></code></pre></div>
+
+<p>不是挺好吗？恩，没错，是可以。但是，仍然存在性能上的缺陷：每次都有多个
+线程被唤醒，而实际只有一个会运行，频繁的上下文切换和锁请求是件很废的事情。
+我们能不能不要notifyAll，而每次只用notify（只唤醒一个）呢？不好意思，想要
+“多路复用”，就必须notifyAll，否则会有丢失信号之虞（不解释了）。只有满足
+下面两个条件，才能使用notify：</p>
+
+<p>一，只有一个条件谓词与条件队列相关，每个线程从wait返回执行相同的逻辑。</p>
+
+<p>二，一进一出：一个对条件变量的通知，语义上至多只激活一个线程。</p>
+
+<p>我又想插播一段：刚才写上面那段代码，IDE提示抛InterruptedException，我
+想提一下，这是因为wait是一个阻塞方法，几乎所有阻塞方法都会声明可能抛InterruptedException
+，这是和Java的interrupt机制有关的，以后我们有机会再说。</p>
+
+<ul>
+<li>我不要死等</li>
+</ul>
+
+<p>上面说的内部锁“低效”，是指当一个内部锁保护多个变量时而言的，如果
+用多个Object做锁，未必在效率上会有什么损失。其实，内部锁的更大的问题在于，
+一旦求锁失败，必须死等，不能被中断。所以，容易造成死锁，恢复机制脆弱。这就
+属于硬伤了。同样，我们以后有机会介绍替代方法。</p>
+
+<p>既然这么做不优雅不高效不亚克西，那如之奈何？Java提供了其他工具吗？是的
+。这就是传说中的java.util.concurrency包里的故事，今天也不说了，有机会在和
+大家讨论。</p>
+
+<p>主要参考资料：</p>
+
+<ol>
+<li><p>Wiki</p></li>
+<li><p>Addison Wesley, Java Concurrency in Practice ,Brian Goetz</p></li>
+</ol>
+
+</div>
+
+
+<div class="row">
+	<div class="col-md-6">
+		
+<div>
+	<span>标签:</span>
+	
+	<span class="label label-default">Java</span>
+	
+	<span class="label label-primary">并行编程</span>
+	
+</div>
+
+
+	</div>
+	<div class="col-md-4 col-md-offset-2">
+		
+	
+			
+ 			<div class="bdsharebuttonbox"><a href="#" class="bds_more" data-cmd="more"></a><a title="分享到QQ空间" href="#" class="bds_qzone" data-cmd="qzone"></a><a title="分享到新浪微博" href="#" class="bds_tsina" data-cmd="tsina"></a><a title="分享到腾讯微博" href="#" class="bds_tqq" data-cmd="tqq"></a><a title="分享到人人网" href="#" class="bds_renren" data-cmd="renren"></a><a title="分享到微信" href="#" class="bds_weixin" data-cmd="weixin"></a></div>
+<script>window._bd_share_config={"common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdPic":"","bdStyle":"0","bdSize":"16"},"share":{},"image":{"viewList":["qzone","tsina","tqq","renren","weixin"],"viewText":"分享到：","viewSize":"16"}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];</script>
+
+
+	
+
+
+	</div>
+</div>
+<div>
+<ul class="pager">
+	
+	<li><a href="/code/java/2014/03/21/java-concurrency-note3-visibility.html" title="Java并行编程笔记3: 可见性重载">上一页</a></li>
+	
+
+	
+	<li><a href="/code/java/2014/03/07/java-concurrency-note1-jmm.html" title="Java并行编程笔记1: JMM">下一页</a></li>
+	
+</ul>
+</div>
+
+
+				</div>
+				<!-- sidebar -->
+				<div class="col-sm-3 col-sm-offset-1">
+					<div class="sidebar-module sidebar-module-inset">
+						<a href="/rss.xml" target="_blank"><img style="width:34px" src="/assets/images//feed_icon_128.png"></a>
+						
+						
+						<a href="mailto:highsp.cn@gmail.com" target="_blank"><img style="width:38px" src="/assets/images//gmail_icon_128.png"></a>
+						
+					</div>
+
+					<div class="sidebar-module" >
+						<h4>最新文章</h4>
+						<ol class="list-unstyled">
+							
+							<li><a href="/scalability/2014/05/06/scalable-architecture-patterns.html">可伸缩性系统架构</a></li>
+							
+							<li><a href="/scalability/2014/05/02/secret-to-10m-concurrency.html">如何做到千万并发连接</a></li>
+							
+							<li><a href="/code/java/2014/04/03/java-history5-jvm.html">Java历史: JVM发展史</a></li>
+							
+							<li><a href="/code/java/2014/04/02/java-history4-org.html">Java历史: 十大组织</a></li>
+							
+							<li><a href="/code/java/2014/04/02/java-history3-people.html">Java历史: 十大牛人</a></li>
+							
+							<li><a href="/code/java/2014/04/02/java-history2-products.html">Java历史: 十大产品</a></li>
+							
+							<li><a href="/code/java/2014/04/02/java-history1-brief.html">Java历史</a></li>
+							
+							<li><a href="/algorithm/2014/04/01/mostest-important-algorithms.html">最重要的34个计算机算法</a></li>
+							
+							<li><a href="/code/algorithm/2014/04/01/mostest-important-algorithms.html">最重要的34个计算机算法</a></li>
+							
+							<li><a href="/internet/2014/03/28/deep-inside-chinese-internet.html">解密中国互联网</a></li>
+							
+						</ol>
+					</div>
+
+					<div class="sidebar-module" >
+						<h4>标签</h4>
+						
+						
+						<a href="/tags.html#"><span class="label label-default">github</span></a>
+						
+						<a href="/tags.html#1-ref"><span class="label label-primary">Java</span></a>
+						
+						<a href="/tags.html#2-ref"><span class="label label-success">并行编程</span></a>
+						
+						<a href="/tags.html#3-ref"><span class="label label-info">algorithm</span></a>
+						
+						<a href="/tags.html#4-ref"><span class="label label-warning">互联网</span></a>
+						
+						<a href="/tags.html#5-ref"><span class="label label-danger">历史</span></a>
+						
+						<a href="/tags.html#6-ref"><span class="label label-default">可伸缩性</span></a>
+						
+						<a href="/tags.html#7-ref"><span class="label label-primary">C10M</span></a>
+						
+						<a href="/tags.html#8-ref"><span class="label label-success">scalability</span></a>
+						
+						<a href="/tags.html#9-ref"><span class="label label-info">pattern</span></a>
+						
+						<a href="/tags.html#10-ref"><span class="label label-warning">architecture</span></a>
+						
+					</div>
+
+					<div class="sidebar-module">
+						<h4>归档</h4>
+						<ol class="list-unstyled">
+							
+							
+							
+							
+							
+							
+							
+							
+
+							
+								
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+								<li><a href="/scalability/2014/05/06/scalable-architecture-patterns.html">2014 05(2)</a></li>
+								
+								
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+								<li><a href="/code/java/2014/04/03/java-history5-jvm.html">2014 04(7)</a></li>
+								
+								
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+								<li><a href="/internet/2014/03/28/deep-inside-chinese-internet.html">2014 03(6)</a></li>
+								
+								
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+								<li><a href="/code/algorithm/2014/02/01/how-to-encrypt-github.html">2014 02(2)</a></li>
+								
+								
+							
+
+							
+							
+							
+						</ol>
+					</div>
+
+					
+					<!-- sidebar -->
+				</div>
+			</div>
+
+			<hr>
+
+			<footer>
+			
+			
+
+
+			<p>&copy; <script>document.write(new Date().getFullYear());</script> 带码的世界 <a href="/">http://highsp.cn</a></p>
+			<p><a href="http://highsp.cn/sitemap.xml">站点地图</a></p>
+			</footer>
+		</div> <!-- /container -->
+		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+		<script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+		
+	
+			
+ 			<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	 m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	 })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+	  ga('create', 'UA-42967195-2', 'highsp.cn');
+	  ga('send', 'pageview');
+</script>
+
+	
+
+
+	</body>
+</html>

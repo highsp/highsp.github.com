@@ -1,0 +1,2673 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+ 
+ <title>highsp</title>
+ <link href="http://highsp.cn/atom.xml" rel="self"/>
+ <link href="http://highsp.cn"/>
+ <updated>2014-10-13T15:57:39+08:00</updated>
+ <id>http://highsp.cn</id>
+ <author>
+	 <name>highsp</name>
+   <email>highsp.cn@gmail.com</email>
+ </author>
+
+ 
+ <entry>
+   <title>可伸缩性系统架构</title>
+   <link href="http://highsp.cn/scalability/2014/05/06/scalable-architecture-patterns.html"/>
+   <updated>2014-05-06T00:00:00+08:00</updated>
+   <id>http://highsp.cn/scalability/2014/05/06/scalable-architecture-patterns</id>
+   <content type="html">&lt;p&gt;列举一下现在比较常见的可伸缩系统架构模型。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;负载均衡 + 独立处理单元&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;独立对等的处理单元，一起由一个前端负载均衡服务器分发请求。
+对等处理单元的数据库可以是私有的，也可以是一个可伸缩共用数据库。一般对等处理单元是无状态。
+处理单元返回的数据给客户端。这是现在最常见的一种架构。
+&lt;img src=&quot;/assets/scalability/images/1.png&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;分发聚合&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;分发节点接受请求，把一个任务拆分成多个小任务分发到处理节点池中，每个处理节点处理好请求，把
+结果发回分发者做聚合，然后由分发节点聚合汇总小任务的结果集，返回给客户端。这种模型普遍应用
+在关键字搜索引擎中。
+&lt;img src=&quot;/assets/scalability/images/2.png&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;结果缓存&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;缓存大量应用在各个层中，当收到一个请求时，首先先查看这个请求是否已经有缓存的结果，有就从缓存
+中读取，没有就去执行请求。Memcached是最常见的缓存服务器。
+&lt;img src=&quot;/assets/scalability/images/3.png&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;总线模型&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;所有的工作节点都监控总线服务器中自己关注的状态，读取数据，并且把处理后的数据写入总线服务器中。
+这种模式有点类似于发布者和订阅者。
+&lt;img src=&quot;/assets/scalability/images/4.png&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;流水线模型&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;工作节点根据服务的不同被分为不同的群，一个群的输入是上一个群的输出，以这种方式串联起来。
+&lt;img src=&quot;/assets/scalability/images/5.png&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;P2P模型&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Amazon Dynamo和Cassandra是点对点模型的典型例子。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Map-Reduce模型&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;这种模式应用于并行批处理系统，用于处理实时性不高，数据庞大且松散耦合的应用中。Google的Map-Redue,
+Hadoop就是这种模型。
+&lt;img src=&quot;/assets/scalability/images/6.png&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;有向图模型&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;由一个总控制节点接收请求，将请求分成小任务和任务执行图，把任务分散到工作节点池中的节点，并控制
+图的执行过程。每个工作节点从输入流中读出数据，根据读取的数据处理，把处理结果写到输出流。这里的
+输入流和输出流往往是分布式可伸缩存储或文件系统。&lt;a href=&quot;http://research.microsoft.com/en-us/projects/dryad/&quot;&gt;Microsoft Dryad&lt;/a&gt;
+和&lt;a href=&quot;http://dl.acm.org/citation.cfm?id=1807184&quot;&gt;Google Pregel&lt;/a&gt;应该用的就是这种模型。
+&lt;img src=&quot;/assets/scalability/images/7.png&quot; alt=&quot;&quot;&gt;
+&lt;img src=&quot;/assets/scalability/images/8.png&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>如何做到千万并发连接</title>
+   <link href="http://highsp.cn/scalability/2014/05/02/secret-to-10m-concurrency.html"/>
+   <updated>2014-05-02T00:00:00+08:00</updated>
+   <id>http://highsp.cn/scalability/2014/05/02/secret-to-10m-concurrency</id>
+   <content type="html">&lt;p&gt;&lt;a href=&quot;http://www.kegel.com/c10k.html&quot;&gt;C10K问题&lt;/a&gt;已经是很遥远的问题了，
+现在我们面对的是如何解决千万并发连接的&lt;a href=&quot;http://c10m.robertgraham.com&quot;&gt;C10M问题&lt;/a&gt;。
+你可能认为这是不可能的，但利用那些最根本而又不为人知的技术，C10M已经不是问题。&lt;/p&gt;
+
+&lt;p&gt;Robert Graham在2013年的一场精彩的演讲深刻的阐述了这个问题。Unix系统最开始并不是
+被设计成一个通用服务器系统，它最初是被设计成电话网络的控制系统。电话网络是实际
+传输数据的，而不是Unix操作系统。所以控制层面和数据层面分开的十分清楚。我们现在
+的问题是Unix系统被部分用在数据层面上，而这是有问题的。单应用单服务器的内核和多
+用户内核设计起来是非常不一样的。&lt;/p&gt;
+
+&lt;p&gt;所以Robert说，解决C10M问题，关键在于理解：&lt;em&gt;内核不是解决问题，而正是问题所在。&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;不要让内核做繁重的操作。&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;把数据包处理，内存管理，进程调度拿出内核，放到应用中去完成，这样能更加高效。
+让Linux系统处理控制层面，让应用处理数据。&lt;/p&gt;
+
+&lt;p&gt;这样一来，对于10M并发连接，系统只用花200个时钟周期处理数据包，140,000时钟周期处理
+应用逻辑。因为主存的数据访问就需要300个时钟周期，最小化代码和减少缓存失效是设计关键。&lt;/p&gt;
+
+&lt;p&gt;面向数据层面的系统每秒可以处理10M个数据包，面向控制层面的系统只能处理1M个数据包。&lt;/p&gt;
+
+&lt;p&gt;如果你觉得10M个数据包很极端，那么记住：&lt;em&gt;可伸缩性就是高度定制化&lt;/em&gt; 想要做一些非同寻常
+的事情，不能把性能问题外放到操作系统去处理。应用必须要自己亲自做。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;C10K问题 - 过去十年&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;十年前，工程师们解决了C10K问题，让服务器能处理上万的并发连接。修改系统内核，把Apache
+那样的多线程模型改成Nginx和Node那样的事件驱动模型。&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Apache问题&lt;/em&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Apache问题是并发连接越多，性能越差。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;性能与可伸缩是两个不同的概念。当人们在谈论大规模时，他们往往是在谈论性能，但他们中间有
+明显的不同。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;对于只持续几秒的短连接来说，快速事物，如果每秒执行1k个事物，那么就会有1k个并发连接。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;如果事物的持续时间变成了10s, 那么每秒执行1k个事物，那就会有10k个连接打开。Apache 
+的性能会明显下降。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;如果当前能处理5k个并发连接每秒，你想处理10k要怎么做？升级硬件，加倍处理器速度，然后呢？
+性能增加了一倍，但是规模并没有提升一倍，可能只处理到6k。即使性能提升了16倍，可能规模还是没有
+到10k。这就是为什么说性能不等于规模。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;问题在于Apache会产生一个CGI进程执行然后中止掉，这种做法并不具备可伸缩性。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;为什么服务器不能处理10K的并发连接？因为内核中使用了一个O(n^2)的算法&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;内核的两个基本问题：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;连接数 = 线程或进程数。 收到一个数据包，内核要遍历10K个进程来决定这个数据包属于哪个进程。&lt;/li&gt;
+&lt;li&gt;连接数 = select/pool(单线程)。 同样的问题，收到每个数据包，都要遍历所有的socket。&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;解决办法：让内核在常数时间内完成&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;无论线程数多少，线程都能做到在常数时间内的切换。&lt;/li&gt;
+&lt;li&gt;使用了新的epoll()/IOCompletionPort来实现常数时间内查找&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;线程调度仍然不能具备可伸缩性， 所以服务器端使用了epoll来提高可伸缩性，从而发展成Node和Nginx
+那种异步编程模型。这将软件性能提升到一个新的高度。即使是一个性能平平的服务器，并发数增多时，
+性能也不会大幅下降。&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;C10M问题 - 下一个十年&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;在不久的将来，服务器端就要面临数以百万计的并发连接。随着IPv6的使用，潜在连接数的大幅增长，
+我们要达到一个新的可伸缩性的级别。&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;需要达到这种可伸缩性级别的例子：IDS/IPS（入侵检测和防御系统），DNS根服务器，TOR节点，视频流，
+负载均衡，网页缓存，防火墙，电邮，垃圾过滤。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;通常人们面对互联网伸缩性问题时看到的是硬件设备，而不是服务器系统本身的问题。因为他们销售的是
+硬件加软件。买设备装到数据中心。这些设备包含主板或网络处理器，加密或数据包检测芯片等。&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;C10M问题意味着什么？&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;&lt;p&gt;10M并发连接&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;1M/s 个连接，每个连接持续10s&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;10Gbps/s网络速度，高速互联网入口&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;10M个数据包每秒， 当前服务器能处理大概50K个数据包每秒，这里需要有大幅的提升。服务器一般能处理
+100K个中断每秒，每一个数据包都会产生一次中断。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;10微秒延迟，当前强大的服务器可能能达到这样的速度，但延迟会大一些。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;10微秒时钟信号周期，限制了最大延迟时间&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;10核CPU，代码应该能很好的运行在更多的CPU上。通常代码只能很好的适应到4核。服务器硬件可能要增加
+更多CPU核数，软件应该也能支持更多核的机器。&lt;/p&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;strong&gt;我们了解Unix，但并不了解网络编程&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;一代的工程师都是通过读W.Richard Stevens的&amp;lt;&lt;Unix Networking Programming&gt;&amp;gt;学习网络编程的。但这本
+书的重点是Unix，而不是网络编程。它告诉你让Unix系统完成繁重的任务，你只是写一个运行在Unix系统上的小服务。
+但是内核并不是可伸缩的。所以要把繁重的操作移出内核，自己处理。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;另一个这种影响的例子，考虑Apache的多线程处理模型。这意味着收到什么数据决定了线程调度器调用哪一个read()
+&lt;em&gt;你在把线程调度系统当作数据包分发系统来用&lt;/em&gt;&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Nginx的做法是不把线程调度系统当作数据包分发系统。自己来处理数据包分发。用select来找对应的socket，
+因为这个socket已经有数据了，我们就可以直接读数据，而不被阻塞。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;结论：让Unix处理网络部分，从此以外都自己处理。&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;如何写出具如此伸缩性的代码&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;如何改写你的代码更具有伸缩性？我们需要知道处理能力的性能实际如何。为了解决这个问题，我们需要解决：&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;&lt;p&gt;数据包处理可伸缩性&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;多核处理可伸缩性&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;内存可伸缩性&lt;/p&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;strong&gt;数据包处理 - 自己写网络驱动&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;数据包的问题在于，数据包要传到Unix内核。网络协议栈很复杂并且消率低下。数据包应该更直接的被传到应用中。
+所以不要让系统处理数据包。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;要达到这一点，就要自己写却动。驱动要做的事情就是直接把数据包发到你的应用而不是系统的网络协议栈。你可以
+找到的驱动：PF_RING, Netmap, Intel DPDK. Intel的驱动是闭源的，但也可以找到很多支持的文档。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;有多块？Intel曾经做过一次测试，在一个普通轻型服务器上，每秒处理80M个数据包（每个数据包花费200个时钟周期）。
+普通的Linux只能做到不超过1M个数据包，这个定制驱动的性能比是80:1&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;要达到10M个数据包的目标，如果200个时钟周期花在数据包上，那么还剩1400个时钟周期在实现DNS/IDS这种类似的功能上。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;用PF_RING，你获取到了原本的数据包，那么要自己实现TCP栈。有人正在实现内核用户态TCP栈。Intel已经提供了一个高性能的TCP栈&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;多核处理&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;多核可伸缩性并不是多线程可伸缩性。处理器变多的速度要大于变快的速度。多数的代码不能充分利用超过4核的处理器。
+增加多核并不意味着性能更高，可能因为糟糕的软件，速度反而变慢。我们希望软件的性能能和处理器个数成线性增长。&lt;/p&gt;
+
+&lt;p&gt;多线程编程不是多核编程&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;多线程：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;一个处理器上运行多个线程&lt;/li&gt;
+&lt;li&gt;通过锁协调多个线程&lt;/li&gt;
+&lt;li&gt;每个线程执行不同的任务&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;多核：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;一个处理器上运行一个线程&lt;/li&gt;
+&lt;li&gt;当两个线程（核）访问同样的数据时，他们会停止并等待&lt;/li&gt;
+&lt;li&gt;多线程执行相同的任务&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;我们的问题是如何让一个应用分散到多核上&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;锁是实现在Unix内核中，在4核上使用锁，大部分软件会等待其它线程释放锁。内核会占用的性能开销会大于多核产生的性能提升。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;我们需要的不是用红绿灯控制的十字路口，而是没有红绿灯的高架立交桥。没有等待，让每个核按照自己的速率执行。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;解决方法：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;在每个核上维持自己的数据结构，然后在所有这些结构上做聚合。&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;原子操作。CPU指令级别支持的原子操作，开销不小，所以不要妄想能解决所有问题。&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;注意ABA问题 &lt;/li&gt;
+&lt;li&gt;内存模型问题，X86和ARM有着不同的内存模型，代码会出现齐葩情况。&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;无锁数据结构。线程永远不会被锁挡住。不要自己实现，跨平台无锁数据结构很复杂。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;线程模型。 管道模型和工人模型，线程可能是接力或各做一块再整合，而这中间不仅仅是要做线程同步。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;处理器粘性&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;maxcpu=2, 让操作系统使用前两个核&lt;/li&gt;
+&lt;li&gt;pthread&lt;em&gt;setaffinity&lt;/em&gt;np 让你的线程使用其它的核&lt;/li&gt;
+&lt;li&gt;/proc/irq/smp_affinity 配置分别由哪些核处理哪些中断&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;内存：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;如果一个连接用2K主存，那么10M连接就是20G主存。然后你只有20M L3缓存，这远远不够用。花费300个CPU时钟去访问主存，
+而CPU这时是空闲着。&lt;/li&gt;
+&lt;li&gt;考虑我们只有1400个时钟的预算来处理一个数据包，200个用于处理数据包本身，那么我们只有4次缓存失效的机会。&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;数据连续性&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;  不要用指针把数据放的到处都是。每次根据指针读取数据，就是导致一次缓存失效，然后级联产生缓存失效。
+[hash pointer]-&amp;gt;[Task Control Block]-&amp;gt;[Socket]-&amp;gt;[App]&lt;/li&gt;
+&lt;li&gt;保存所有数据在一块内存中[TCB|Socket|App], 这只会产生一次缓存失效&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;内存分页&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;32G内存的页表大小为64M，这显然放不进缓存，那就产生两次缓存失效，一次页表本身，一次页表指向的内存。&lt;/li&gt;
+&lt;li&gt;解决办法，设置启动项使用大分页，2M页大小，而不是4K&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;压缩数据&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;使用bit而不是int &lt;/li&gt;
+&lt;li&gt;索引只使用1-2字节，而不是8字节内存指针。使用缓存高效结构而不是有多次内存访问的二分查找树。&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;NUMA（非均匀内存访问模型）会加倍主存访问时间。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;内存池&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;启动时预先申请所有内存&lt;/li&gt;
+&lt;li&gt;每个对象，每个线程，每个socket设置缓存&lt;/li&gt;
+&lt;li&gt;防止资源耗尽&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;预先读取 &lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;同时处理两个数据包&lt;/li&gt;
+&lt;li&gt;预先读取下一个Hash表项&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;超线程&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;网络处理器可以超线程到4，Intel只能到2&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Java历史: JVM发展史</title>
+   <link href="http://highsp.cn/code/java/2014/04/03/java-history5-jvm.html"/>
+   <updated>2014-04-03T00:00:00+08:00</updated>
+   <id>http://highsp.cn/code/java/2014/04/03/java-history5-jvm</id>
+   <content type="html">&lt;h2&gt;Java虚拟机的起源与构造&lt;/h2&gt;
+
+&lt;p&gt;当我们说到“Java”这个词的时候，指的是四个相互关联的概念：Java语言、Java 
+API、Java Class文件格式、Java虚拟机。整个Java体系是基于Java 虚拟机构造的，正
+因为如此，才能实现Java的安全性和网络移动性。Java并非是第一个采用“虚拟机”概
+念的体系，但却是第一个得到广泛运用的虚拟机平台。 “虚拟”，是一种隔离物理资源
+与逻辑资源的手段。Java虚拟机的“虚拟”，则是用来隔离物理机器、底层操作系统与J
+ava语言规范实现的手段。 &lt;/p&gt;
+
+&lt;p&gt;虽然Java是一种面向对象的语言，我们平时大量使用的，是对象间的多态、组合(Co
+mposition)、委派（Delegation）,但当我们讨论虚拟机的时候，我们看见的基本概念却
+是“栈(Stack)”和“堆(Heap)”。根据冯诺依曼的“存储计算”模型，所有的代码都保
+存在代码空间中，随着程序计数器指针的变化进行程序的执行、跳转。Java虚拟机中没
+有寄存器的概念，方法调用是采用“栈”进行的，这是一种安全、简洁的方法。 &lt;/p&gt;
+
+&lt;p&gt;Java虚拟机通过类装载器支持对类的隔离，这也是Java实现安全性的基础。每个类
+都具有自己的命名空间，在具有不同安全级别的沙箱中运行，因此不会产生低安全级别
+的代码来越权访问高级别代码的机会。类装载器的出现是Java虚拟机与大部分用C实现的
+虚拟机的显著不同之处。 &lt;/p&gt;
+
+&lt;p&gt;Java虚拟机的另外一个显著特点就是实现了自动的垃圾收集。在往常，写程序的时
+候要牢记对象之间的关联，在每个程序块中假若申请了对象空间，就必须在出口释放掉
+，方法调用往往同时也就是对象的边界。而自动垃圾收集带给开发者的最大好处，就是
+可以非常方便地从整体上把系统的对象组织成一张对象图，只需往这张图中添加对象，
+维护对象之间的关联，却不需要自己做复杂的清扫工作。正是有了这种思维单纯的对象
+图的支持，OR Mapping(关系数据库与对象映射）技术在最近得以大行其道，设计模式也
+更容易被Java群体所接受。 &lt;/p&gt;
+
+&lt;h2&gt;虚拟机的优化&lt;/h2&gt;
+
+&lt;p&gt;1995年第一代的Java出台之时，其虚拟机执行是依靠“字节码解释器（Byte Code 
+Interceptor）”的，也就是说每条指令都由虚拟机来当场解释执行，这造成速度令人抓
+狂地缓慢。更有甚者有人开始总结许多的“速度优化经验”，比如说：“尽量把所有的
+代码都放在较大的方法中执行”与“少用接口”等等，这完全与Java语言的设计目的背
+道而驰，现在看起来是多么可笑的奇谈怪论，当时却是很多程序员津津乐道的经验之谈
+。无他，Java本身执行太慢了。Java生命的前十分之三就是如此缓慢地渡过的。 &lt;/p&gt;
+
+&lt;p&gt;于是，Sun的工程师开始拼命想着提高执行速度。JIT静态编译器的出现是在1996年
+十月，Sun放出了第一个编译器。JIT编译器在每段代码执行前进行编译，编译的结果为
+本地静态机器码，执行速度有了质的提高。Symantec公司当时凭借其傲人的JIT编译器，
+在整个Java界受到热烈的追捧。在其后的1998年，Java 1.2发布的时候，附带了JIT编译
+器，从此Java的使用者终于可以抛开上面说的那些奇怪的“速度优化经验”了。 &lt;/p&gt;
+
+&lt;p&gt;JIT静态编译器虽然可以解决一些问题，但是性能仍然和C/C++有很大的差距。对一
+段程序而言，一名优秀的程序员是如何来改进运行速度的呢？首先，他不会傻到把所有
+的代码都来优化，他会观察、思考到底哪段代码对整体性能影响最大？然后集中精力来
+优化这一段代码。按照经验，整个程序 10%-20%的代码，会占据 80%-90%的运行时间。
+用这种方法，在同样的时间、付出同样程度的努力后，这名优秀的程序员使整个程序的
+性能得到了很大程度的优化。HotSpot引擎，就是模仿人工的这种方法进行优化的。在程
+序运行的开始，Java代码仍然解释执行，但HotSpot引擎开始进行采样（Profiling)。 &lt;/p&gt;
+
+&lt;p&gt;根据采样的结果，决定某段程序是占用较多运行时间的，就认为它是“HotSpot”，
+它也就是目前程序的瓶颈， 引擎开始启动一个单独的线程进行优化。因为不象原始的 
+JIT编译器那样无差别的编译所有代码，HotSpot引擎可以集中精力来对HotSpot代码进行
+深度优化，这样这部分代码执行起来更加迅捷。之前的静态编译器只能按照预定的策略
+进行编译优化，而HotSpot引擎的优化是基于采样的结果的，因此这种方法对所有的应用
+程序都有效。1999年3月27日，Sun放出了第一个HotSpot引擎。在随后的2000年5月的JDK
+ 1.3中，包含了HotSopt引擎，这也使1.3成了一个具有里程碑意义的发行版本。到这里
+，Java的十年生命，已经过去了一半。 &lt;/p&gt;
+
+&lt;p&gt;HotSpot代表的是一种动态编译的技术。对Java这种大量使用委派、组合等面向对象
+特性的程序来说，动态编译比起静态编译来有显著的优势。比如Method Inlining。方法
+的调用是一个很耗时的操作，假若可以把方法调用直接内嵌到调用者的代码中，就可以
+节省大量的时间， 这被称为“Method Inlining”。因为涉及到类的重载，静态优化很
+难确切知道哪些属性、方法被重载，因此很难对method进行合并，只好在方法内部进行
+静态编译，假若每个方法都很小，静态优化能起到的作用也就比较小。而动态编译因为
+可以完全随时掌握类的重载情况，就可以把相关的方法合并进行深度优化。现代的Java
+程序，特别是在设计模式教育得到普及之后，大量使用类的继承、委派，形成了很多短
+小的方法，动态编译的优势就更加明显。 &lt;/p&gt;
+
+&lt;h2&gt;自从出现了HotSpot之后，整个Java界为之一振。&lt;/h2&gt;
+
+&lt;p&gt;最近的五年，就是继续优化的五年。继续进行优化的方法有几条路，一是研究新的
+采样算法。因为采样关系到不同的优化策略，会对整体性能有比较大的影响。二是研究
+深度优化的方法。三是研究垃圾收集的算法。垃圾收集会带来程序短暂的停顿，这会带
+来负面的用户体验。于是，如何提高垃圾收集的效率，减少延迟，出现了五花八门的算
+法，比如渐进式收集、火车算法等。在多处理器的时候，如何利用多处理器进行并行收
+集也是研究的一个热点。这方面，BEA的JRocket走在了前面。 &lt;/p&gt;
+
+&lt;h2&gt;现实生活中的虚拟机&lt;/h2&gt;
+
+&lt;p&gt;最后，让我们来盘点一下目前市面上可见的各个虚拟机。 &lt;/p&gt;
+
+&lt;p&gt;首先要提到的，毫无疑问是Sun的虚拟机。作为大众心目中的“官方实现”，Sun拥
+有最大的用户群，并且拥有“兼容基准”的地位，其他虚拟机都必须要考虑和Sun虚拟机
+的兼容性问题。比如 JRocket就会在某些特殊情况下表现出和Sun不同的特性，可能对程
+序运行有影响。不过Sun也的确没有让广大用户失望，虽然在早期性能比不上Symantec,
+后来在1.2 的时候性能又被IBM超越，但Sun一直在努力革新，特别是 1.4.2之后，性能
+有了长足的进步。虽然JDK 1.5的虚拟机在性能上没有什么提高，但是增强了稳定性，据
+说修改了8000处bug，真是让人汗流不止。原来我们在1.4.2下面一直在享受这么多bug啊
+。&lt;/p&gt;
+
+&lt;p&gt;其次是老牌劲旅IBM。IBM的JDK在1.3的时代创下了最好的性能记录，从此树立了高
+端形象。特别是在其WebSphere产品中得到了很好的评价。其JDK也是最早支持64bit的JD
+K之一。到了现在，IBM JDK在高端仍然是和BEA可以一拼的。 &lt;/p&gt;
+
+&lt;p&gt;然后是后起之秀，BEA的JRocket。说到BEA突然在JVM领域一夜之间异军突起，多少
+让人有些瞠目，不过它采取的战略特别简单：自己没有，索性花钱买了在此领域深有研
+究的JRocket，在前面加上BEA的标志就可以了。JRocket瞄准高端服务器市场，在多处理
+器环境下有不俗的表现。 &lt;/p&gt;
+
+&lt;p&gt;除此之外，还有几个开放源代码的JVM值得一提。首先就是大名鼎鼎的JikesRVM。说
+起其大名，大多数人都知道Jikes编译器是 IBM开发的，效率比同等的javac编译器高得
+多，很多开发者都使用Jikes编译器来取代javac。而JikesRVM则是IBM开源出来的一整套
+虚拟机技术，包含了JIT，GC的完整实现，在其网站上也有众多的论文，实在是想要深入
+研究JVM者的绝佳资源(http://jikesrvm.sourceforge.net)。 &lt;/p&gt;
+
+&lt;p&gt;Kaffe是一个老牌的JVM,不过现在已经很少听到了。作者撰写此文时，www.kaffe.or
+g网站已经没有响应，也不知道现在的情况如何了。 &lt;/p&gt;
+
+&lt;p&gt;GNU则有两个计划：GCJ和GNU classpath。GNU classpath是一个底层实现，而GCJ是
+支持java的预编译器。 &lt;/p&gt;
+
+&lt;h2&gt;结束语&lt;/h2&gt;
+
+&lt;p&gt;时光流转，轰轰烈烈的Java虚拟机性能争论仿佛还在耳边回响，现在新的争论却已
+经是“Java的性能是否已经超越C/C++”。 &lt;/p&gt;
+
+&lt;p&gt;Joakim Dahlstedt 是 JRockit 的主要架构设计师之一，他坚持认为，Java绝不是
+一种速度慢，效率低的语言，JVM 是一个关键的组件，确保了系统的部署与运行和开发
+一样快速、轻松。特别是在目前开发趋势是采用大量预制的框架时，动态编译有可能比C
+/C++这样的静态优化获得更好的性能。&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Java历史: 十大组织</title>
+   <link href="http://highsp.cn/code/java/2014/04/02/java-history4-org.html"/>
+   <updated>2014-04-02T00:00:00+08:00</updated>
+   <id>http://highsp.cn/code/java/2014/04/02/java-history4-org</id>
+   <content type="html">&lt;h2&gt;Sun : 因为Java而永被荣光&lt;/h2&gt;
+
+&lt;p&gt;Sun是1980年代初期由斯坦福大学三位年轻学生创立的公司。与一般人的印象不同，“SU
+N”的本意并不是企图剽窃天上那颗温暖的恒星的威名，而是“斯坦福大学网络”的意思
+。Sun在“前Java”时代就因为SPARC芯片、Solaris操作系统和“网络就是计算机”的口
+号而为人所知。1990 年12月，Sun启动了一个看上去没什么意思的嵌入式软件项目。然
+而，基于C++的开发很快遇到了麻烦。一个创新型技术公司的特色立刻显示出来，一群天
+才不是去深入C++，而是另辟蹊径，发明了Java。这个传奇故事已经尽人皆知，但是其中
+所包含的精神却始终令人望空凝思。&lt;/p&gt;
+
+&lt;p&gt;Java的发明，使得 Sun真正有机会在软件的历史天空中放射出太阳的光芒。Sun发明了Ja
+va，并且在长达十年的时间里始终走在Java大潮的最前端。Sun是Java的老家，是Java慈
+爱的母亲，这一切任何人都改变不了。虽然Sun似乎没能够从Java中获得应有的金钱回报
+，但这丝毫没有挫伤Sun对于Java的母爱，还有对于Java大潮的舍我其谁的领导气概。
+所有人都迷恋富有的感觉，但是也迟早会意识到钱不是世上最宝贵的东西。这个世界并
+不缺少会赚钱的公司，但是能够靠着创新型技术推动整个世界进步的公司却是凤毛麟角
+。Sun应该感到骄傲，他们将因为Java而在历史的天空里发射出太阳的光芒。&lt;/p&gt;
+
+&lt;h2&gt;IBM : Java经济的最大受益人&lt;/h2&gt;
+
+&lt;p&gt;Sun公司是Java的发明人，但IBM却是Java最大的受益者。是IBM抢占了利润丰厚的应用服
+务器市场的头把交椅，是IBM在Java技术上投入最多的金钱，拥有最大的影响力和最好的
+开发者社区。可以毫不夸张地说，Java使IBM的软件体系得到复兴，在某种意义上，甚至
+可以说，是Java创造了这种复兴。Java之后又来了Linux，这种建造在不属于自己的平台
+上以获得成功的理念更是变得非常有影响力。正是这种理念铸就了今天IBM “按需计算
+，服务为王”的王者风范。&lt;/p&gt;
+
+&lt;p&gt;2004年三月，IBM以Java的解放者的姿态借机向Sun发难。IBM公司负责新兴技术的副总裁
+史密斯在一封公开信中表示，IBM愿意与Sun合作成立一个项目，意在通过开放源代码开
+发模式管理Java的开发工作。&lt;/p&gt;
+
+&lt;p&gt;墙内开花，墙外香。面对IBM的成功，到底是谁妒嫉呢？或许去程序的社区中逛逛聊聊，
+明眼人是不难发现事实真相的。也许Sun应该好好向IBM学习经营之道。尽管利润额不如
+硬件及服务部门，但IBM软件部门的利润率是最高的——高达85%的利润率足以令人惊叹
+。在最近的一个季度里，IBM软件部的利润率上升了8%，其中WebSphere产品组的利润率
+上升了14%。&lt;/p&gt;
+
+&lt;p&gt;正是IBM在开源和Java上的全身心地投入又秉承开放性的原则，今日的Java才能以日进千
+里的速度将许多竞争对手远远抛在后面。Java 10年，IBM功不可没。&lt;/p&gt;
+
+&lt;h2&gt;BEA : 用AppServer影响Java阵营&lt;/h2&gt;
+
+&lt;p&gt;十年前诞生的Java并不是一开始 就那么引人注目的，虽然用Applet也曾为互联网络带来
+一抹亮色，但毕竟只是Toy。在企业级应用市场上， Java一直没有什么起色，虽然Java
+的支持者一直在鼓吹它有着大型企业级应用的强悍功能。过高的期望与低能的产品，一
+时间颇让人怀疑Java的路是否已经走到了尽头？可以说是WebLogic Server的出现逐渐打
+消了人们的顾虑，BEA公司慧眼独具在2001年收购的这个产品将人们的目光吸引到电信、
+金融、政府等Java企业级应用方面， WebLogic Server以其优良的性能让人们看到Java
+应用广阔的未来。虽然随后在Java应用服务器方面出现了像IBM公司的WebSpere、开源软
+件 JBoss等Java应用服务器，但WebLogic Server几乎占领世界前500强所有企业的应用
+服务器市场地位依然无法撼动。&lt;/p&gt;
+
+&lt;p&gt;Java 现在已经不单纯是一个语言，从另一方面它也代表着开放与创新。很多以Java产品
+为基础的公司或者从事Java开发的程序员骨子里都有着开放与创新的烙印，BEA公司的发
+展深深地印证了这一点。与合作伙伴的密切合作向Java社区贡献产品基础源代码、加入
+权威开源组织参与Java标准的制定等证实着 BEA的开放，而其产品从WebLogic Server一
+种拓展到WebLogic Platform、WebLogic Portal、WebLogic Workshop等其它领域又证实
+着它的创新能力。&lt;/p&gt;
+
+&lt;h2&gt;Oracle : 早起的鸟儿有虫吃&lt;/h2&gt;
+
+&lt;p&gt;Oracle 的老板拉里?艾利森是有名的混世魔王和花花公子，所以尽管他也是软件产业成
+功人士的代表，却绝不是程序员们心目中的英雄，程序员们毕竟不是央视《对话》节目
+里群众演员，没必要为了节目需要而对权贵财阀们做出一副贱骨头状。但是，任何人都
+不能不钦佩Oracle在技术上的前瞻性和坚决性。Oracle是 1996年获得Java许可证的，紧
+接着就大胆地将Java作为战略性的发展方向而予以全面支持。要知道当时Java的前景并
+不是十分确定的，而 Oracle的坚决投入，使得它在后来的Java世界中抢得一席之地。19
+98年9月发布的Oracle 8i为数据库用户提供了全方位的Java支持。Oracle 8i成为第一个
+完全整合了本地Java运行时环境的数据库，开发者用Java就可以编写Oracle的存储过程
+，这意味着可以仅在Oracle数据库中就完成几乎全部的应用开发。J2EE兴起后，Oracle
+更是有心进入开发工具市场，因而购买了JBuilder的源码，并在此基础上开发出 
+JDeveloper。如今Oracle除了数据库稳居第一之外，在Java开发工具世界里也自成一派
+。这一切不能不归功于当初的眼光远大。&lt;/p&gt;
+
+&lt;h2&gt;Apache : 开源软件的品牌保证&lt;/h2&gt;
+
+&lt;p&gt;Java程序员的日常工具箱中，我们可以发现Ant、Tomcat、Log4、Lucene这些鼎鼎大名的
+开源产品。而它们的共同点在于，都是由 Apache Software Foundation社群中杰出的开
+发者开发的开源项目。Apache这个名字在Java的世界中实在太出名了，以至于“Apache
+”这六个字母成为开源项目品质保证的代名词。Apache是自由开源的一面旗帜，其Apach
+e License更是成为商业友好的License的首选，只SourceForge上就有1000多个以Apache
+ License授权的项目，其流行程度可见一斑。&lt;/p&gt;
+
+&lt;p&gt;但是，如我们所知，Apache最早闻名IT界是靠高性能的Web服务器，其历史甚至和Java 
+一样长。Apache对于Java的偏爱，以及其发展的速度也映射出了Java繁荣的一角。现在
+去它的主页上看看，满目望去全部都是Java的开源项目，早就不光是其C服务器的老本行
+了。Apache对Java最大的贡献就是提供了这么一个精品的开放舞台，让杰出的开发者和
+成熟的开源项目走到一起，共同给 Java语言提供一个丰富的工具仓库。对于一种语言、
+一个平台来说，其库的丰富程度对于开发者来说的重要性再怎么强调也不为过。勿庸置
+疑，Aapache 上会出现越来越多的Java开源项目，而我们开发者也将更多地得益于这令
+人目不暇接的繁荣。&lt;/p&gt;
+
+&lt;h2&gt;TheServerSide : 论坛的专业精神&lt;/h2&gt;
+
+&lt;p&gt;成立于2000年5月，TSS最初以一本书而广为人知。它的创始人Ed Roman同时也是J2EE名
+著《Mastering EJB》的作者;Roman运营着一个J2EE咨询/培训公司TheMiddlewareCompan
+y（简称TMC），TSS当时是TMC的下属部门；为了扩大企业的影响，Roman在TSS网站上免
+费发布了那本书的电子版。J2EE程序员要吃下这个香饵，就得在论坛中注册;注册的同时
+，多半也会看一眼论坛的内容；一看之下，大部分人都被吸引住，成了社区的忠实成员。&lt;/p&gt;
+
+&lt;p&gt;TSS究竟有什么吸引人的秘诀？首先，它有一支能力过人的运营团队，除了 Roman本人之
+外，其中还有好几人都是J2EE领域的顶尖专家；第二，TSS和TMC定期会推出专家研讨会/
+视频访谈、技术白皮书、评测报告，通读 TSS提供的这些内容，基本上就可以把握技术
+的当前趋势。但这还不是全部。最可贵的还是TSS的社区风格：他们深谙技术，但不盛气
+凌人；思想敏锐，但不因此缺乏审慎和大局感。其中大多数人都已在自己的开发领域颇
+有建树，在TSS上的活动既给他们提供了与同行进行深度交流的机会。一个新成员进入社
+区，就像参加了一个起点很高的专业俱乐部，这不是一个求解“怎样设置JAVA_HOME环境
+变量”之类问题的地方。事实上，在J2EE技术发展的若干转折点上， TSS都起到了关键
+的推动作用。&lt;/p&gt;
+
+&lt;p&gt;几经易主之后，J2EE咨询培训公司TMC在2004年关闭；TSS则被IT媒体集团TechTarget收
+购。我们期待着它更加繁荣的未来。&lt;/p&gt;
+
+&lt;h2&gt;JBoss : 职业开源软件组织&lt;/h2&gt;
+
+&lt;p&gt;J2EE的婴儿期，“应用服务器”原本是“昂贵”的代名词。但从1999年起，Marc 
+Fleury和Rickard Oberg等人就已经着手改变这种状况。他们开发的开源EJB容器当时叫
+做“EJBoss”，在Sun公司的干预下（注意，“EJB”是注册商标）， JBoss获得了今天
+的名字。虽然从问世起就一直受到关注，但JBoss第一个达到产品化标准的版本可能是它
+的2.2版。它的易用让人一见难忘：除了标准部署描述符，无需编写专用的xml配置文件
+。Oberg自豪地说，“我们的架构并不是按照EJB规范指定的路线设计的，因此也没有走
+大多数应用服务器走过的弯路。”&lt;/p&gt;
+
+&lt;p&gt;Jboss 3.x版本保持了一贯的创新精神，在用户中间获得了更广泛的认可。但是，文档要
+收费下载、在邮件列表上提问常常会遭到Fleury等人的斥责。无疑， JBoss的创始者也
+意识到了自己的幼稚：开源软件只能靠服务盈利，卖文档赚钱有限、骂用户当然更损害
+企业形象。&lt;/p&gt;
+
+&lt;p&gt;虽然以Oberg为首的许多程序员退出了开发队伍（其中很多人成了JBoss的死敌），在开
+源软件领域也面临JOnAS Geronimo等新老对手的竞争，但JBoss还是以不断推出的新版本
+站稳了脚跟。在技术上，它是策动J2EE演进的重要力量：拟议中的EJB 3也要追随Jboss 
+4倡导的开发范式，以至于二者的代码样本之间的差别几乎难以分辨；在商业上，JBoss
+与Sun公司言和修好，甚至还获得了数量可观的风险投资。 JBoss已经像拥护者预期的那
+样，成为了应用服务器领域的Linux。&lt;/p&gt;
+
+&lt;h2&gt;Borland : 深度介入Java&lt;/h2&gt;
+
+&lt;p&gt;除了Sun以外，也许没有一家公司 像Borland这样深层地介入Java。Borland开发了最早
+的Java编译器之一，Borland的工程师参与了早期JDK的设计，Borland的JBCL(JavaBeans
+ Component Library) 技术也成为后来Java Bean规范的基础。但是Borland对Java世界
+最大的影响还是JBuilder。&lt;/p&gt;
+
+&lt;p&gt;1997年11月，Borland JBuilder 1.0发布。虽然第一个版本相对于竞争对手并没有表现
+出明显的优势，但是Borland凭借深厚的技术实力和正确的市场策略，不断地超越了对手
+。 JBuilder 3.5成为业界第一个100%基于Java架构的开发工具，并且市场份额很快超过
+了50%。在随后的版本中，JBuilder持续改进对团队开发、 J2EE架构、Mobile技术等方
+面的支持，最终成为了Java开发工具市场，特别是大型企业级Java开发市场中的霸主。J
+Builder的成功，很大一个原因来自于Borland坚持的平台中立性，即对不同厂商的解决
+方案提供一视同仁的支持。&lt;/p&gt;
+
+&lt;p&gt;2005年初，随着Eclipse社区的迅速崛起，Borland进入了Eclipse的董事会，成为战略开
+发者(Strategy Developer) ，并宣布将推动Borland的其它产品与Eclipse的集成。在随
+后发布的一份文件中，Borland宣称JBuilder的未来版本将放弃原有的 PrimeTime架构，
+而基于Eclipse架构。这个代号为“Peloton”的版本预计于2006年下半年发布。&lt;/p&gt;
+
+&lt;p&gt;Borland对Java 的另外两个主要贡献来自Together和BES(Borland Enterprise Server)
+。Together是著名的建模工具，能够与包括JBuilder在内的许多开发工具进行集成，全
+球市场份额占有率排名第二。BES AppServer是一种J2EE服务器，在全球市场份额占有率
+上次于WebLogic和WebSphere，排名第三。&lt;/p&gt;
+
+&lt;h2&gt;JCP : Java世界的联合国&lt;/h2&gt;
+
+&lt;p&gt;当联合国正在为安理会改革问题 吵得如火如荼时，Java世界的“联合国安理会”已经成
+功地运作了七个年头。JCP（Java Community Process）在1998年由Sun发起成立，目标
+是通过一个开放、合作和鼓励参与的非盈利组织来发展和推进Java和相关的技术。正是
+由于JCP计划的推出可以让所有对Java感兴趣的软硬件厂商，个人和组织都能参与到技术
+规范的制定和发展过程中，协调各方的兴趣和利益、集思广益，才可以让Java在短短的
+几年内异军突起，成为可以和微软开发平台抗衡的一个主流开发语言。JCP计划既然是一
+个组织，自然也有一定的架构。JCP组织架构主要包括PMO (Program Management 
+Office)、JCP成员、EC、EG。事实上，JCP的架构就好像一个Java世界的联合国。虽然也
+有不少人批评JCP成为各派利益的角力场，因而效率低下；但是，它毕竟为Java的顺利发
+展很好地掌握了方向。&lt;/p&gt;
+
+&lt;h2&gt;微软与Java : 不得不说的故事&lt;/h2&gt;
+
+&lt;p&gt;微软跟Java不对付，地球人都知 道。跟Sun和解了又怎么样？  .NET跟Java就是竞争对
+手，没什么说的。但是有点IT掌故的人都知道，微软并非一开始就跟Java过不去。当年
+比尔?盖茨盛赞Java是“长期以来最好的程序设计语言”，而且很早就购买了Java许可证
+。但是微软作为村里的老大，看着人家的儿子茁壮呈长，不由得生了私心杂念，搞起了
+小动作，在 Visual J++中加入了一些破坏纯洁性的东西。单独来看，Visual J++是COM
+时代微软最棒的开发工具，用WFC写Windows应用程序和COM组件实在是一种享受。但是放
+在Java大家庭里，这个家伙就显得多少有点不怀好意。一场官司下来，微软被逐出Java
+大家庭，Visual J++无疾而终。以后的事情尽人皆知，.NET出笼，利齿直指Java，几年
+撕咬下来，没占着便宜也没吃大亏，如今也算是南北朝对峙，二分天下有其一。设想如
+果当时微软能够摒弃帝国主义心态，正确对待Java，与其他人一起共建美好的Java“共
+产主义社会”，那么今天我们的软件开发世界应该会美好得多。可惜黄粱一梦，终究是
+蚂蚁的喜事。2004年，微软与Sun实现了和解，但愿到Java 20周年的时候，我们能更正
+面地描述微软对Java发挥的作用。 &lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Java历史: 十大牛人</title>
+   <link href="http://highsp.cn/code/java/2014/04/02/java-history3-people.html"/>
+   <updated>2014-04-02T00:00:00+08:00</updated>
+   <id>http://highsp.cn/code/java/2014/04/02/java-history3-people</id>
+   <content type="html">&lt;h2&gt;James Gosling : Java之父&lt;/h2&gt;
+
+&lt;p&gt;作为Java之父，James Gosling的名字可谓是耳熟能详。当人们评论一种编程语言时，总
+喜欢捎带着把下蛋的母鸡一起带上。Java做为中国的编程语言学习者餐桌上有限的那么
+几样餐点中的流行款式，自然是让James Gosling风光不已。虽然James Gosling现在已
+经不是领导Java发展潮流的领军人物了，做为Sun的开发者产品组的CTO，怎么算来也是
+身居高位了，俗事缠身吧，但是这并不妨碍其对于Java一如既往的爱护，表达着各式各
+样鲜明的观点，引发一场又一场的争论。&lt;/p&gt;
+
+&lt;p&gt;James Gosling是很爱Java的——是啊，哪有当父母的不爱自己的孩子的呢。James 
+Gosling也是很爱Sun的——是啊，哪有当领导的不爱自己的公司的呢。于是我们在批评.
+NET的安全性的队伍前头，在褒扬Java性能的队伍前头，在抨击SWT开倒车的队伍前头，
+在给NetBeans大唱赞歌的队伍前头，我们都看到了James Gosling的身影。无论对错、偏
+见或者固执，至少说明了Gosling的鲜明个性丝毫没有受到年龄的影响。也许也只有这种
+天才而偏执的人物才能创造出 Java这般伟大的语言来吧。&lt;/p&gt;
+
+&lt;h2&gt;Bill Joy : 软件业的爱迪生&lt;/h2&gt;
+
+&lt;p&gt;Joy生于1954年，1982年与Vinod Khosla, Scott McNealy和Andy Bechtolsheim一起创建
+了Sun Microsystems，并从那时起担任首席科学家，直到2003年离开。他是一位令人崇
+敬的软件天才，他在软件和硬件的历史上留下了无数令人仰止的传奇。&lt;/p&gt;
+
+&lt;p&gt;在上个世纪80年代早期，DARPA与BBN达成协议，准备将Vinton Cerf和Bob Kahn设计的TC
+P/IP协议添加到Berkeley UNIX中。Bill Joy被委派来完成这项任务，然而他却拒绝将BB
+N的TCP/IP协议栈添加到BSD中，因为在他的眼中BBN的TCP/IP实现还远不够好，于是他就
+写了一个高性能的TCP/IP协议栈。John Gage回忆道，“BBN和DARPA签署了巨额合同来实
+现TCP/IP协议，然而他们的员工所编写的代码远没有一个研究生所做的好。于是他们邀
+请 Bill Joy参加他们的一个会议，这位研究生穿着一件T-Shirt就出现了，他们询问他
+，‘你是如何做到的呢？’Bill回答说，‘这是非常简单的一件事，你读一下协议然后
+就可以编码了’”。除了TCP/IP协议，基于分页的虚拟内存系统最早也是由Bill Joy添
+加到Berkeley UNIX内核当中的。同时他还是vi、csh、早期Pascal编译器的作者。&lt;/p&gt;
+
+&lt;p&gt;关于Bill Joy惊人的软件才能流传最广的一个传奇是，据说他在上研究生的时候，想看
+看自己能不能写一个操作系统出来，于是就在三天里写了一个非常简陋，但是可以使用
+的Unix系统, 传说就是BSD的前身。虽然如此夸张的才情令人难以置信，但是考虑到主角
+是Bill Joy，还是有一定的可信度的。Bill Joy硕士毕业之后，决定到工业界发展，于
+是就到了当时只有一间办公室的Sun, 他作为主要设计者参与了SPARC微处理器的设计，
+负责设计最为关键的一部分电路。这样兼精软硬件的天才实在是让人不得不佩服啊。199
+5年，Sun发布了轰动世界的Java语言。当然，Bill Joy对Java也作出了不少的贡献，首
+先是JINI——一种针对分布式服务的基础连接技术。任何可以内嵌JVM的电子设备都可以
+通过JINI相互连接； JXTA是基于Java的P2P协议，允许互联网上的软件进行点对点交流
+和协作。&lt;/p&gt;
+
+&lt;p&gt;这个其貌不扬的瘦高个，有着凌乱的亚麻色头发，被《财富》杂志誉为“网络时代的爱
+迪生”的技术狂人，在短短的二十年间，创造了无数令人心动的软件。在MIT的BBS上曾
+有一个帖子，说微软电话面试有一道题，问“Who do you think is the best coder, 
+and why?”虽然回复的帖子中大家都声明列举的best coder排名不分先后，然而大多数
+人仍把Bill Joy列在第一位，或许可以从一个侧面验证Bill Joy在广大Programmer心目
+中的地位吧。&lt;/p&gt;
+
+&lt;h2&gt;Joshua Bloch :  Java 2 元勋&lt;/h2&gt;
+
+&lt;p&gt;早在1996年，适逢Java刚刚崭露头角，年内好事连连。先是1月份发布JDK 1.0，然后是5
+月底在旧金山召开首届JavaOne大会，年末又是JDK 1.1紧跟其后。正是在Java技术如火
+如荼、大展拳脚的背景之下，Joshua Bloch来到了Sun，开始了他带领Java社区步入“迦
+南美地”的漫长历程。&lt;/p&gt;
+
+&lt;p&gt;很快，他被从安全组调入核心平台组，从事底层API设计。至此以后，每逢JDK的重大版
+本发布，总能在其中见到Joshua的“妙笔”。JDK 1.1中的java.math、1.4中的assertio
+ns，还有大家所熟识的Collections Framework皆是Joshua一手打造。其中的Collection
+s Framework还获得了当年的Jolt大奖。到了J2SE 5.0研发阶段，身为平台组构架师的Jo
+shua接掌了Tiger大旗，其核心地位已然无人可以替代。作为Tiger的代言人和领路人，
+没有谁比 Joshua更清楚Tiger。相信大家一定还记得Joshua当年仿效英国诗人William 
+Blake所做的咏Tiger诗八首，优雅的笔调，透出大师深厚底蕴的同时，也道出了Tiger的
+几大重要特性，这些特性是自JDK 1.1引入Inner Class以来，Java最大的语法改进。
+Java风雨十年，从JDK 1.1到J2SE 5.0，Joshua实在功不可没。难怪有人戏言，假如将Ja
+mes Gosling比作Java之父，那么Joshua就是一手将Java “哺育”成人的Java之母。Jos
+hua对Java的贡献还不止于JDK，提起他的大作《Effective Java》（Addison Wesley, 
+2001），相信Java粉丝们一定耳熟能详。该书荣膺2002年度Jolt大奖，且备受James 
+Gosling推崇。书中57条颇具实用价值的经验规则，来自Joshua多年来在JDK开发工作中
+，尤其是Collections Framework设计中的实践心得，各个有理有据，剖析深入，也足见
+其深厚功力。该书对Java社群的影响，犹如C++社群中的《Effective C++》。Joshua对J
+CP的贡献也不小。他是JSR201和JSR175的领导者，前者包含了Tiger四大语言特性，后者
+则为Java提供了元数据支持。此外，他还是JSR166的发起人之一（该JSR由Doug Lea领导
+），并且是许多其他JSR的参与者。Joshua目前是JCP为数不多的几个执行委员会成员之
+一。&lt;/p&gt;
+
+&lt;p&gt;Joshua Bloch给人的印象是谦逊平和，行事低调而不喜抛头露面，一个典型的技术人员
+和实干家。不过即便如此，也丝毫不会减弱他对Java技术的卓越贡献和对 Java社区的绝
+对影响力。有人说，如果他能更彰显一些，就很有可能成为Java开发者中的领军人物，
+就有如Don Box之于微软社群。&lt;/p&gt;
+
+&lt;p&gt;2004 年7月初，就在Tiger发布在即之时，就在Jusha Bloch刚刚荣获Sun“杰出工程师（
+Distinguished Engineer）”的称号之时，他突然离开Sun而去了正值发展态势迅猛的Go
+ogle。当他离开Sun的消息在TSS发布之后，众多拥趸表达了怀念与不舍之情。一年过去
+了，我们还没有获知Joshua的任何近闻，似乎又是他行事低调的一贯作风所致，不知他
+在Google状况如何。希望Joshua依然能继续“摩西未尽的事业”，以他的影响力推动Jav
+a社群继续前行。据称，《Effective Java》的下一版会加入Java 5.0的部分，让我们翘
+首以待吧。&lt;/p&gt;
+
+&lt;h2&gt;Bruce Eckel : 功勋卓著的机会主义分子&lt;/h2&gt;
+
+&lt;p&gt;Bruce Eckel原本是一位普通的汇编程序员。不知道是什么因缘际会，他转行去写计算机
+技术图书，却在此大红大紫。他成功的秘诀不外乎两点：超人的表达能力和捕捉机会的
+能力。他最早的一本书是1990年代初期的《C++ Inside &amp;amp; Out》，随后，在1995年他写
+出了改变自己命运的《Thinking in C++》。如果说这本书充分表现了他作为优秀技术作
+家的一面，那么随后他写作《Thinking in Java》并因此步入顶级技术作家行列，则体
+现了他作为优秀的机会主义分子善于捕捉机会的另一面。写作中擅长举浅显直接的小例
+子来说明问题，语言生动，娓娓道来，特别适合于缺乏实践经验的初学者。因此《Think
+ing in Java》俨然成为天字第一号的Java教科书，对Java的普及与发展发挥着不可忽略
+的作用。不过公允地说，Bruce Eckel的书欠深刻。比如在“Thinking in…”系列中对
+设计模式的解说就有失大师水准。这一方面是因为书的定位非常清晰，另一方面也是因
+为Bruce太过分心赶潮流，未能深入之故。TIJ之后，他预言Python将火，就匆匆跑去写
+了半本《Thinking in Python》。后来Python并未如期而旺，于是他也就把书稿撂在那
+里不过问了，机会主义的一面暴露无遗。我们也可以善意的猜测一下，他的下一个投机
+对象会是什么呢？Ruby？.NET？MDA？总之，是什么我都不奇怪。&lt;/p&gt;
+
+&lt;h2&gt;Rickard Oberg :J2EE奇才&lt;/h2&gt;
+
+&lt;p&gt;Oberg的作品很多，流行的代码生成工具XDoclet和MVC框架WebWork都出自他的手笔。这
+两个框架有一个共同的特点，即它们的功能虽然简单，但设计都非常优雅灵活，能够很
+方便地扩展新功能甚至移植到新环境下使用。优雅的设计源自Oberg的过人才华，简单的
+功能则折射出他玩世不恭的人生态度。正是这两种特质的融合，才造就了这个不世出的
+奇才。&lt;/p&gt;
+
+&lt;p&gt;1999年，JDK 1.3发布，其中带来了一个重要的新特性：动态代理（Dynamic Proxy）。
+当所有人都还在对这项新技术的用途感到迷惑时，Oberg发现用它便可以轻松攻克EJB容
+器实现中的一些难关。这一发现的产物就是一本《Mastering RMI》，以及大名鼎鼎的JB
+oss应用服务器。但Oberg很快又让世人见识了他的玩世不恭。由于和总经理Marc 
+Fleury在经营理念上不合，Oberg抱怨“法国的天空总让我感到压抑”，甩手离开了自己
+一手打造的JBoss。此后的几年里，他和老友Hani Suleiman不断地对JBoss的“专业开源
+”模式和Marc Fleury的商人味道冷嘲热讽，让众人为他的孩子气扼腕叹息。&lt;/p&gt;
+
+&lt;p&gt;2002年 10月，微软推出Petstore示例应用的.NET版本，并宣称其性能比Java Petstore
+高出数倍。正是Oberg深入分析这个示例应用的源代码，在第一时间指出它大量运用了SQ
+L Server专有的特性，性能对比根本不具参考价值。后来Oberg又先后关注了AOP和IoC容
+器，两者都成为了J2EE架构的新宠。&lt;/p&gt;
+
+&lt;h2&gt;Doug Lea : 世界上对Java影响力最大的个人&lt;/h2&gt;
+
+&lt;p&gt;如果IT的历史，是以人为主体串接起来的话，那么肯定少不了Doug Lea。这个鼻梁挂着
+眼镜，留着德王威廉二世的胡子，脸上永远挂着谦逊腼腆笑容，服务于纽约州立大学Osw
+ego分校计算器科学系的老大爷。&lt;/p&gt;
+
+&lt;p&gt;说他是这个世界上对Java影响力最大的个人，一点也不为过。因为两次Java历史上的大
+变革，他都间接或直接的扮演了举足轻重的脚色。一次是由JDK 1.1到JDK 1.2，JDK1.2
+很重要的一项新创举就是Collections，其Collection的概念可以说承袭自Doug Lea于19
+95年发布的第一个被广泛应用的collections；一次是2004年所推出的Tiger。Tiger广纳
+了15项JSRs(Java Specification Requests)的语法及标准，其中一项便是JSR-166。JSR
+-166是来自于Doug编写的util.concurrent包。&lt;/p&gt;
+
+&lt;p&gt;值得一提的是: Doug Lea也是JCP (Java小区项目)中的一员。&lt;/p&gt;
+
+&lt;p&gt;Doug 是一个无私的人，他深知分享知识和分享苹果是不一样的，苹果会越分越少，而自
+己的知识并不会因为给了别人就减少了，知识的分享更能激荡出不一样的火花。《Effec
+tive JAVA》这本Java经典之作的作者Joshua Blosh便在书中特别感谢Doug是此书中许多
+构想的共鸣板，感谢Doug大方分享丰富而又宝贵的知识。这位并发编程的大师级人物的
+下一步，将会带给 Java怎样的冲击，不禁令人屏息以待。&lt;/p&gt;
+
+&lt;h2&gt;Scott McNealy :SUN十年来的掌舵者&lt;/h2&gt;
+
+&lt;p&gt;McNealy，Sun的CEO、总裁兼董事长。他曾经狂傲的说:“摧毁微软是我们每个人的任务
+。”这位英勇的硅谷英雄，似乎带头起义，试图组织一个反微软阵线联盟，以对抗微软
+这股庞大的托拉斯恶势力。他时常口出惊人之语，在公开场合大肆的批评微软，并曾经
+说微软的.NET是.NOT。&lt;/p&gt;
+
+&lt;p&gt;Scott McNealy先后毕业于哈佛大学及史丹佛大学，分别持有经济学学士学位及企管硕士
+。1982年MBA毕业的他和三个同学共同合伙创建了Sun，并于 1984年成为Sun的执行官。
+“要么吞了别人，不然就被别人吞了”是Scott McNealy的名言录之一。他擅长以信念带
+动员工，鼓舞士气。极富自信的他，对于认定的事，总是坚持自己的想法，因此有人形
+容他是一个刚愎自用的决策者。&lt;/p&gt;
+
+&lt;p&gt;身为Sun这艘船的掌舵者，Scott McNealy能够看多远，Sun就能走多远。Scott McNealy
+认为将来软件界是一个只有服务，没有产品的世代。他希望打造出Sun不是一个纯靠硬件
+赚钱的公司。从Open Source到Open Solaris，Sun希望可以成为提供整合性解决方案的
+服务厂商。Solaris 10 + UltraSPARC是否可以像Scott McNealy希望的是下一匹世纪黑
+马呢？Sun是否能以股价来证明华尔街分析师及普罗大众的诽短流长？Scott McNealy是
+否能带领着Sun成为继微软之后的下一个巨人，一场场IT界的争霸战值得我们拭目以待。&lt;/p&gt;
+
+&lt;h2&gt;Rod Johnson : 用一本书改变了Java世界的人&lt;/h2&gt;
+
+&lt;p&gt;Rod在悉尼大学不仅获得了计算机学位，同时还获得了音乐学位。更令人吃惊的是在回到
+软件开发领域之前，他还获得了音乐学的博士学位。有着相当丰富的C/C++技术背景的Ro
+d早在1996年就开始了对Java服务器端技术的研究。他是一个在保险、电子商务和金融行
+业有着丰富经验的技术顾问，同时也是JSR-154（Servlet 2.4）和JDO 2.0的规范专家、
+JCP的积极成员。&lt;/p&gt;
+
+&lt;p&gt;真正引起了人们的注意的，是在2002年Rod Johnson根据多年经验撰写的《Expert 
+One-on-One J2EE Design and Development》。其中对正统J2EE架构的臃肿、低效的质
+疑，引发了人们对正统J2EE的反思。这本书也体现了Rod Johnson对技术的态度，技术的
+选择应该基于实证或是自身的经验，而不是任何形式的偶像崇拜或者门户之见。正是这
+本书真正地改变了Java世界。基于这本书的代码，Rod Johnson创建了轻量级的容器Spri
+ng。Spring的出现，使得正统J2EE架构一统天下的局面被打破。基于Struts+Hibernate 
++Spring的J2EE架构也逐渐得到人们的认可，甚至在大型的项目架构中也逐渐开始应用。&lt;/p&gt;
+
+&lt;p&gt;Rod Johnson的新作《Expert One-on-one J2EE Development without JEB》则更让人吃
+惊，单单“Without EJB”一词就会让大多数J2EE架构师大跌眼镜了。不过Rod Johnson
+可能仅仅是想通过“Without EJB”一词表明应该放开门户之见。这也是Rod Johnson一
+贯的作风，。也许正是这种思想，促使得Rod Johnson创建了Spring，真正改变了Java世
+界。&lt;/p&gt;
+
+&lt;h2&gt;Alan Kay :Java的精神先锋&lt;/h2&gt;
+
+&lt;p&gt;Sun的官方Java教材中有一句话，说Java是“C++的语法与Smalltalk语义的结合”。而Sm
+alltalk的创造者就是Alan Kay。&lt;/p&gt;
+
+&lt;p&gt;Alan Kay于1970年加入Xerox公司的Palo Alto研究中心。早在70年代初期，Alan Kay等
+人开发了世界上第二个面向对象语言Smalltalk，因此，Alan Kay被誉为Smalltalk之父
+。2003年，Alan Key因为在面向对象程序设计上的杰出贡献，获得了有计算机界的诺贝
+尔奖之称的ACM Turing Award。&lt;/p&gt;
+
+&lt;p&gt;Alan Kay成名于Smapltalk和OOP，而Java虽然在语言上类似于C，但是在语义上非常接近
+Smalltalk，很多Java中的设计思想在 Alan Kay的文献中找到根源，也有些人将Alan 
+Kay尊为Java思想的先驱。不过遗憾的是似乎Alan Kay老先生对Java并不买账，反倒攻击
+说Java是存在致命缺陷的编程语言，Java的成功不是由于Java本身的内在价值，而是其
+商业化的成功。 Alan Kay欣赏的是Lisp，他认为Lisp是软件的麦克斯韦方程，其中的许
+多想法是软件工程和计算机科学的一部分。看来拥有Alan Kay这样一位重量级的Java先
+驱仍是我们Java一厢情愿的单恋吧。&lt;/p&gt;
+
+&lt;h2&gt;Kent Beck : 领导的敏捷潮&lt;/h2&gt;
+
+&lt;p&gt;Beck全家似乎都弥漫着技术的味道。生长在硅谷, 有着一个对无线电痴迷的祖父，以及
+一个电器工程师父亲。从小就引导Kent Beck成为了业余无线电爱好者。&lt;/p&gt;
+
+&lt;p&gt;在俄勒冈州大学读本科期间，Kent Beck就开始研究起模式。然而在他最终拿到计算机学
+位之前，他却是在计算机和音乐中交替学习。似乎Java大师都能够有这样的能耐，另一J
+ava大牛Rod Johnson同样也拥有音乐学的博士学位。&lt;/p&gt;
+
+&lt;p&gt;Kent Beck一直倡导软件开发的模式定义。早在1993年，他就和Grady Booch（UML之父）
+发起了一个团队进行这个方面的研究。虽然著有了《Smalltalk Best Practice 
+Patterns》一书，但这可能并不是Kent Beck最大的贡献。他于1996年在DaimlerChrysle
+r启动的关于软件开发的项目，才真正地影响后来的软件开发。这次的杰作就是XP（极限
+编程）的方法学。&lt;/p&gt;
+
+&lt;p&gt;和软件开发大师Martin Fowler合著的《Planning Extreme Programming》可谓是关于XP
+的奠基之作。从此，一系列的作品如《Test Driven Development: By Example》，《Ex
+treme Programming Explained: Embrace Change》让更多的人领略到了极限编程的精髓
+，也逐步导致了极限编程的流行。&lt;/p&gt;
+
+&lt;p&gt;Kent Beck的贡献远不仅如此。对于众多的Java程序员来说，他和Erich Gamma共同打造
+的JUnit，意义更加重大。也许正式这个简单而又强大的工具，让众多的程序员更加认可
+和信赖极限编程，从而引起了Java敏捷开发的狂潮吧。&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Java历史: 十大产品</title>
+   <link href="http://highsp.cn/code/java/2014/04/02/java-history2-products.html"/>
+   <updated>2014-04-02T00:00:00+08:00</updated>
+   <id>http://highsp.cn/code/java/2014/04/02/java-history2-products</id>
+   <content type="html">&lt;h2&gt;Sun JDK :Java的基石&lt;/h2&gt;
+
+&lt;p&gt;众所周知，流传于市的JDK不单Sun一家，比如IBM的JDK、BEA的JRocket、GNU的GCJ，以
+及如Kaffe这样的开源实现，不一而足。但是，根正苗红的Sun官方JDK一直以来都是备受
+瞩目的主流，它对Java社区的影响也是举足轻重。&lt;/p&gt;
+
+&lt;p&gt;1996 年1月，Sun在成立了JavaSoft部门之后，推出了JDK 1.0，这是Sun JDK（Java 
+Development Kit）的首个正式版本;当年12月，JDK1.1出炉。该版除了对前序版本部分
+特性做了改进以外，重写了AWT，采用了新的事件模型。1998年12 月，JDK 1.2正式发布
+。此时的类库日臻完善，API已从当初的200个类发展到了1600个类。在1.2版本中引入了
+用100%纯Java代码写就的 Swing，同时，Sun将Java更名为Java 2。&lt;/p&gt;
+
+&lt;p&gt;1999年，Java 技术形成了J2SE、J2EE和J2ME三大格局。Sun向世人公布了Java HotSpot
+性能引擎技术的研究成果。HotSpot旨在进一步改善JVM性能，提高Java ByteCode的产生
+品质，加快Java应用程序的执行速度。J2SE 1.3发布于2000年；2002年2月间，J2SE 
+1.4问世，这是有JCP参与以来首个J2SE的发行版本。2004年9月30日，代号为“Tiger”
+的J2SE 5.0终于出笼了，这次发布被誉为Java平台历来发布中特性变动最大的一次。包
+括泛型在内的若干重大语法改进、元数据支持，包括多线程、JDBC在内的多项类库改进
+，都令广大Java程序员激动不已。自此，Sun的官方JDK（J2SE Development Kit）已经
+步入了一个新的高度。 &lt;/p&gt;
+
+&lt;h2&gt;Eclipse :以架构赢天下&lt;/h2&gt;
+
+&lt;p&gt;IBM是在2001年以4000万美元种子基金成立Eclipse联盟，并且捐赠了不少程序代码。如
+今，该组织有91个会员，包含许多全球最大的软件商。根据Evans Data公司的资料，Ecl
+ipse是目前最受欢迎的Java开发工具。&lt;/p&gt;
+
+&lt;p&gt;Java厂商若要共同对抗微软，彼此之间就要有共同的开发工具才行。&lt;/p&gt;
+
+&lt;p&gt;在Eclipse 平台上，程序员可使用好几种不同的语言。在前端方面，用户可整合多种工
+具来撰写Plug-in程序或Unit Test。Eclipse最大的特色就在于其完全开放的体系结构，
+这代表任何人都可下载并修改程序代码，给Eclipse写插件，让它做任何你能想到的事情
+，即所谓“Design for everything but nothing in particular”。&lt;/p&gt;
+
+&lt;p&gt;Eclipse基金会的架构比较特别，反映出企业现今对于开放原始码计划也越来越积极主动
+。Eclipse不像一般开放源码软件容许个人的捐献程序，该基金会是由厂商主导。不论是
+董事会成员或者是程序赞助者几乎都来自于独立软件开发商(ISVs)的员工。&lt;/p&gt;
+
+&lt;p&gt;Eclipse 首席执行官Mike Milinkovich说，这种厂商会员制是特意设计的；他说Eclispe
+软件开发快速就是因为会员制的关系，同时又加上开放源码开发模式的临门一脚。这与
+一般透过标准组织的做法全然不同。 这其实正好验证了一句老话:“开放即标准”。&lt;/p&gt;
+
+&lt;h2&gt;JUnit/Ant : 让Java自动化的绝代双骄&lt;/h2&gt;
+
+&lt;p&gt;在Java程序员必备的工具中，共 同拥有且交口称赞的恐怕就非JUnit、Ant莫属了。一个
+是单元测试的神兵利器，一个是编译部署的不二之选，它们让Java的开发更简单。
+JUnit 由XP和TDD的创始人、软件大师Kent Back以及Eclipse架构师之一、设计模式之父
+Erich Gamma共同打造。名家的手笔和理念使得JUnit简单而强大，它将Java程序员代入
+了测试驱动开发的时代。JUnit连任了2001、2002年 “Java World编辑选择奖”以及200
+3年“Java World最佳测试工具”和2003年“Java Pro最佳Java测试工具”等众多奖项，
+深受Java程序员好评。&lt;/p&gt;
+
+&lt;p&gt;Ant是开源项目的典范，它让IDE的功能更加强大，从Sun的 NetBeans到JBuilder,主流的
+IDE中处处都有它的身影。“Another Neat Tool”原是它的本名，但这已经渐渐不为人
+知。它彻底地让部署自动化，而程序员需要做的仅仅是几条简单的配置命令。和JUnit一
+样，Ant也荣获了众多的殊荣:2003年JavaWorld“最有用的Java社区开发的技术编辑选择
+奖”, 2003年Java Pro“最有价值的Java部署技术读者选择奖”，2003年“JDJ编辑选择
+奖”，也让Ant受到的多方的认可。&lt;/p&gt;
+
+&lt;p&gt;Ant对JUnit的全面集成,则使得一切都变得更加完美。只需简单地配置，从自动测试到报
+告生成，从编译到打包部署均可自动完成。强大的功能，简单的配置，让Java程序员高
+枕无忧。实可谓让Java自动化的绝代双骄。&lt;/p&gt;
+
+&lt;h2&gt;Websphere : 活吞市场的大鲸&lt;/h2&gt;
+
+&lt;p&gt;1999年， IBM与Novell签订合作协议，成功地提供电子商务的解决方案给予原先使用Net
+Ware的用户。同年更是推出了WebSphere Application Server 3.0，并且推出WebSphere
+ Studio与VisualAge for Java让工程师可以快速开发相关的程序。2001年，IBM更是宣
+布将应用服务器、开发工具整合在一起，与DB2、 Tivoli及Lotus结合成为一套共通解决
+方案，如今、IBM更是并入了Rational Rose ( UML tools )让开发流程更是完整化。
+Sun在Web Services的策略方面远远落后于微软与IBM, 当他们手拉手在研订Web 
+Services规范, 加上IBM买硬件送软件或是买WebSphere送DB2的策略让企业大佬们纷纷转
+向IBM的阵营, Sun才惊觉大势已去。WebSphere复杂的安装，深奥的设定，难以理解的出
+错讯息不断地挑战开发者的耐心与毅力。&lt;/p&gt;
+
+&lt;p&gt;IBM如今已经不是将 WebSphere定义为单一产品，它已经是一个平台的代名词。它里面的
+产品目前包含了应用服务器、商业整合、电子商务、数据讯息管理、网络串流、软件开
+发流程、系统管理、无线语音等等。非常多样化,也让企业界愿意相信WebSphere可以带
+给他们一套完整的解决方案。同时, IBM也在推广SOA的概念, 简单来说, 利用Web 
+Service的耦合性与工作流程的整合, 为企业内部打造以服务为导向的架构。&lt;/p&gt;
+
+&lt;p&gt;IBM捐献出Eclipse带给Java开发人员对IDE的重新掌握。未来是否会捐献出WebSphere的
+哪一个部分成为OpenSources, 或许, 又是改写Java世界的时刻了。&lt;/p&gt;
+
+&lt;h2&gt;WebLogic : 技术人的最爱&lt;/h2&gt;
+
+&lt;p&gt;1995年, BEA成立了, 初期以Tuxedo数据转换的产品为基础, 成长之迅速是历年来最强的
+企业。 1998年, BEA推出以Java为基础的网络解决方案, 提供了完整的中间层架构, 更
+同时支持EJB 1.0 及微软的COM组件, 方便的管理接口掳掠了工程师的心。 在IBM和Orac
+le尚未准备好迎击的时候, BEA已经席卷企业应用平台的市场。 WebLogic无论在市场领
+先度与技术领导性与策略远观性都优于当年的所有应用服务器厂商。&lt;/p&gt;
+
+&lt;p&gt;如今WebLogic不仅仅是应用平台服务器的名称, 而是BEA对于整个企业解决方案的总称, 
+无论是WebLogic Portal或是WebLogic Integration配合着Workshop开发环境, 来自微软
+的UI开发团队让Workshop几乎达到所见即所得。 接着, 在下一个版本之中, BEA的BeeHi
+ve开放源代码计划将释出中间层控件的开发模块, 并且与Eclipse合作共同打造新一代的
+开发环境。如此强而有力的技术支持, 更是让顾客愿意使用WebLogic平台的最大原因。
+代号为“Diablo”的 WebLogic Server 9.0小恶魔已经出现了, 目前虽然仅仅是BETA版,
+ 以Portlet 方式打造的管理接口与完整且美妙的WebServices支持, 实在很难找到可以
+挑剔的地方, 虽然去年被IBM的技术性推销超越了市场占有率, 不过接下来SOA的平台竞
+争现在才开始, BEA的LOGO也加入“Think liquid”并且推出新的AquaLogic平台做为数
+据服务平台, 可见, Java的应用服务器的战争, 还会继续进行着。&lt;/p&gt;
+
+&lt;h2&gt;JBuilder : Java开发工具的王者&lt;/h2&gt;
+
+&lt;p&gt;Java的开发工具中,最出名的莫过于Borland公司的JBuilder了。对于一些没有弄清楚开
+发工具与JDK的区别的Java入门者来说， JBuilder就如同Visual C++之于C++，以为JBui
+lder就是Java的全部。比起捆绑在服务器上销售的JDeveloper，JBuilder应该是唯一的
+仅靠自身的实力而占领了大部分市场的Java商用开发工具了。而JBuilder作为Java 开发
+工具的王者，其夺冠之路并非一帆风顺。直到Java的天才Blake Stone成为JBuilder的Ar
+chitect之后，JBuilder 2.0以及3.0才逐渐推出。2000年3月14日，JBuilder 3.5的推出
+别具意义，它成为了业界第一个用纯Java打造的开发工具，也风靡了整个Java开发工具
+市场。在同年11月份推出的JBuilder 4.0乘胜追击，冲破了50%的市场占有率，成为了真
+正Java开发工具的王者。&lt;/p&gt;
+
+&lt;p&gt;Borland以每半年左右推出一个新版本的速度，让众多的对手倒在了沙场。而Microsoft
+因为与Sun的官司，也使得一个强大的对手退出了战争。2001年，加入了对企业协作支持
+的JBuilder 5以及强化了团队开发工具的JBuilder 6打败了最后一个对手Visual Age 
+For Java。2002年JBuilder 7推出之后，再也没有其他厂商与JBuilder竞争。&lt;/p&gt;
+
+&lt;p&gt;孤独的王者并没有停下脚步，在2003年到2005年间，JBuilder也仍然延续了其半年一个
+版本的速度，推出了8、9、10、2005四个版本。强大的功能以及持续的改进，也让Java
+程序员多了一分对能够在开发工具市场上与 Microsoft血拼十数年的Borland的敬仰。&lt;/p&gt;
+
+&lt;h2&gt;Oracle : Java人永远的情结&lt;/h2&gt;
+
+&lt;p&gt;在林林总总的数据库之中，有一种尤其令人又爱又恨、印象深刻，那就是关系型数据库
+市场的“大佬”——Oracle。&lt;/p&gt;
+
+&lt;p&gt;从公司的角度， Oracle和Sun有着诸多相似之处，例如：两家公司都拥有一位个性鲜明
+的CEO。早在Java诞生之初的1995年，Oracle就紧随 NetScape从而第二个获得了Java许
+可证。从那以后，Oracle对Java的鼎力支持是Java能够在企业应用领域大获成功的重要
+原因之一。&lt;/p&gt;
+
+&lt;p&gt;所有J2EE程序员都知道，Oracle的JDBC驱动虽然与Oracle数据库配合良好，但在不少地
+方使用了专有特性。其中最为著名的就是 “CLOB/BLOB问题”，诸如此类的问题给开发
+者带来了很多麻烦。为了同时兼顾不同的数据库，他们不得不经常把自己的一个DAO（数
+据访问对象）写成两份版本：针对Oracle的版本和针对其他数据库的版本。有不少人为
+了开发便利，舍弃了数据库之间的可移植性，将自己的产品绑定在Oracle的专有特性上
+。&lt;/p&gt;
+
+&lt;p&gt;Oracle提供的Java开发工具也与此大同小异。不管是数据库内置的Java支持还是JDevelo
+per IDE， Oracle的Java工具都和Oracle数据库有着千丝万缕的联系。看起来，只要Ora
+cle还是数据库市场上的“头牌”，了解、学习Oracle的专有特性，周旋于Oracle特有的
+问题和解决方案之中，就将仍旧是J2EE程序员在数据库基础和SQL之外的必修功课。对Or
+acle的爱与恨，也将仍旧是Java人心头一个难解的情结。&lt;/p&gt;
+
+&lt;h2&gt;Struts、Hibernate : 让官方框架相形失色的产品&lt;/h2&gt;
+
+&lt;p&gt;好的框架能够让项目的开发和维护更加便捷和顺利。相比Sun官方标准的迟钝以及固执，
+开源框架也更得到Java程序员的共鸣。Struts以及Hibernate就是这样一类产品，它们简
+单、优雅，更让官方的产品相形失色。&lt;/p&gt;
+
+&lt;p&gt;谈起Struts，不可避免地就要提及MVC（Model-View-Controller）的理念。而准确地讲
+，MVC的提出却最早源于JSP的标准。在 1998年10月7号，Sun发布的JSP的0.92的规范中
+提出的Model 2就是MVC的原型。在1999年12月Java World的大会中，Gavind Seshadri的
+文章最早阐述了Model 2就是一种MVC的架构，同时也提及了MVC架构是一种最好的开发方
+法。2000年3月，由Craig McClanahan发布的Struts成为了最早支持MVC的框架。Struts
+在设计上虽然存在一些诟病，但是不可否认的是，它使得Java Web应用的开发更加简洁
+和清晰，也让更多的程序员爱上了Java，并开始遗忘官方的JSP。时至今日，比起如WebW
+ork、Tapestry以及 Sun官方的JSF，Struts或多或少存在些不足，但是众多成功项目的
+实施，仍然使其牢牢占据的Java Web应用框架的首位。&lt;/p&gt;
+
+&lt;p&gt;Hibernate 则在某种程度上改变了人们对构建J2EE的思路。相比其EJB的Entity Bean的
+映射技术，Hibernate则显得更加简洁和强大。五分钟就能把Hibernate跑起来，让更多
+的Java程序员享受到了开发的乐趣。第 15届Jolt大奖中，最优秀数据库、框架以及组件
+的奖项中，Hibernate当仁不让获得头筹；不仅如此， Hibernate甚至还影响了官方的标
+准。在众多Java程序员翘首以待的EJB 3.0的规范中，Hibernate得到了支持。&lt;/p&gt;
+
+&lt;p&gt;Java开源的繁荣不仅让众多Java的开发者享受到了更多的便利，甚至影响了官方的标准
+。恐怕这也是作为Java人独有的乐趣之一吧。&lt;/p&gt;
+
+&lt;h2&gt;PetStore : J2EE人的必修课&lt;/h2&gt;
+
+&lt;p&gt;很少有一个例子项目如PetStore这 般广为人知，而这很大程度上要归功于Sun很“英明
+”地把PetStore做成一个只展示架构而在性能调优上留下了大大余地的例子。围绕着性
+能话题，产生了颇为有趣的厂商之间以及平台之间的Pet Wars。除去这些关于性能的流
+言蜚语乃至中伤，PetStore在展示J2EE1.3平台的架构、演示什么叫分层方面还是有着很
+大的功劳的。而且 PetStore在架构方面的丰富性使得其成为J2EE的那些轻量级小兄弟们
+展示自身的一个必选科目。&lt;/p&gt;
+
+&lt;p&gt;不谈那些围绕PetStore的口水，那些数不尽的盗版，PetStore给开发新手带来的最重大
+的影响，我想应该是架构的观念而不是性能，也不是业务。做为一种技术的Demo，这无
+可非议。但是如果你是一个新手，跟着PetStore亦步亦趋地学习J2EE开发，难免会陷入
+过度设计、华而不实之类的困境。围绕着.NET的PetStore的克隆 PetShop展开的架构与
+性能的大讨论，是不是也在促使我们学习新技术时应该以解决问题为导向呢？特别是当
+你想把一个如PetStore这般的 Sample Project的技术照搬到你的现实世界的Real 
+Project来时。&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Java历史</title>
+   <link href="http://highsp.cn/code/java/2014/04/02/java-history1-brief.html"/>
+   <updated>2014-04-02T00:00:00+08:00</updated>
+   <id>http://highsp.cn/code/java/2014/04/02/java-history1-brief</id>
+   <content type="html">&lt;h2&gt;1990－1994：Java缘起&lt;/h2&gt;
+
+&lt;p&gt;Larry Wall说，优秀程序员应有的三个特点:懒惰、急躁和傲慢。Java就是诞生在一群懒
+惰、急躁而傲慢的程序天才之中。&lt;/p&gt;
+
+&lt;p&gt;1990 年12月，Sun的工程师Patrick Naughton被当时糟糕的Sun C++工具折磨的快疯了。
+他大声抱怨，并威胁要离开Sun转投当时在Steve Jobs领导之下的NeXT公司。领导层为了
+留住他，给他一个机会，启动了一个叫做Stealth（秘密行动）的项目。随着James 
+Gosling等人的加入，这个项目更名为Green。其目标是使用C++为嵌入式设备开发一种新
+的基础平台技术，James Gosling本人负责开发一个SGML编辑器。正如人们事后分析的那
+样，这位天才的程序员太懒惰，所以没有把C++学好，开发中碰了一头包;太急躁—— 所
+以不愿意停下来读读Scott Meyers的新书《Effective C++》;太傲慢——所以轻易地决
+定开发一中新的编程语言。他把这种语言命名为C++++--，意思是C++“加上一些好东西
+，减去一些坏东西”。显然这个糟糕的名字不可能长命百岁，很快这种颇受同伴喜爱的
+小语言被命名为Oak。&lt;/p&gt;
+
+&lt;p&gt;到了1992年9月，Oak语言连同Green OS和一些应用程序一起发布在称做Start 7的小设备
+上，从而使之有了第一次精彩的亮相。随后，Sun开了一家名为FirstPerson的公司，整
+个团队被转移到这家公司里研发机顶盒，以投标时代华纳公司的一个项目。这帮天才被
+技术狂热所鼓舞，开发出了一个高交互性的设备，结果没想到时代华纳公司和有线电视
+服务商并不愿意用户拥有那么大的控制权，从而在竞标之战中败给了SGI。Oak的锋芒之
+锐，竟然把客户都给吓懵了。Sun沮丧地关闭了FirstPerson，召回了整个团队。事实证
+明，传统行业中那些脑满肥肠的保守主义者是腐朽没落的。回去！回到激情澎湃的IT产
+业，抓住互联网的大潮，这才是出路！1994年，Oak被命名为Java，针对互联网的新一轮
+开发如火如荼，一切已经就绪，熔岩在地下奔流，火山即将喷发。至于为什么Oak会改名
+为Java呢？这是因为当时Oak要去注册商标时，发现已经有另一家公司已经先用了Oak这
+个名字了。Oak这个名字不能用，
+那要取什啥新名字呢？？Green Teem的工程师们边喝着JAVA咖啡边讨论着这个问题，看
+着手上的咖啡，于是灵机一动，就取名Java好了。这也就是为什么 Java 的Icon是一个
+正在冒着热烟的可爱咖啡杯的由来了。而在1995年5月23日，JDK（java Development 
+Kits）1.0a版本正式对外发表。&lt;/p&gt;
+
+&lt;h2&gt;1995: Java香浓世界&lt;/h2&gt;
+
+&lt;p&gt;1995年，Sun正式对外公布了Java，并且发布了JDK 1.0。这种外形酷似C++，却包含一颗
+Smalltalk般纯洁的面向对象之心的全新程序设计语言及其平台，几乎在一夜之间就成为
+软件产业的新宠儿。 Java当时仅仅被用来为网站制作一些动态应用,诸如动画图片之类
+，但这仍然引起了很多Web开发者们的注意，他们非常渴望有一种安全的语言，可以在静
+态的HTML网页上制作动画图片。Sun最终把Java集成到NetScape浏览器。同时因为它具有
+“只写一次，随处运行”的特性，而引起了很多开发者的注意，他们可以再也不用为了
+使程序能够在不同型号的硬件上运行而耗费大量的时间来编译代码了。&lt;/p&gt;
+
+&lt;p&gt;当时的Web浏览器的出现也为Java的出现起到了很好的推动作用，通过Java和Web浏览器
+的结合，人们似乎看到了什么，有人甚至预言PC将在一两年内退出历史的舞台，取而代
+之的是基于Java的浏览器应用程序，通过网络计算设备来进行应用。Java的出现为当时
+的软件产业带来了无限的遐想。&lt;/p&gt;
+
+&lt;h2&gt;1996：Java大跃进，盟主地位就此定&lt;/h2&gt;
+
+&lt;p&gt;SUN在1996年一开始首先成立了JavaSoft组织，并在1月23日正式发布自己的Java 1.0，
+作为20世纪业界出现的最重要的技术之一，Java引起了编程世界的革命。直到现在，Jav
+a仍然是互联网上最流行的语言。&lt;/p&gt;
+
+&lt;p&gt;在Sun 正式发布Java 1.0之后，Java这门新生的语言就拥有了自己的会议——JavaOne，
+这次会议初试啼音就吸引了600多名参与者。除了拥有这么多的积极参与者来进行Java的
+开发之外，各大知名公司也纷纷向Sun申请Java的许可。一时间，NetScape、惠普、IBM
+、Oralce、Sybase甚至当时刚推出Windows 95的微软都是Java的追随者。
+Java的应用就像是世界上的顶级玩家们组成的一个公开联盟，告诉全世界我们大家就是
+都在用着Java。也正是因为如此，Java也找到了自己的归宿。现在的J2EE已经成为中大
+型企业级应用的标准，成为承接数据库和Web之间的一个重要桥梁。
+当年Java的机会实在太多了，以至于很难知道到底该做什么。最终Java在应用服务器市
+场获得了难以取代的地位，也确定了J2EE的发展方向，并且仍将延续下去。&lt;/p&gt;
+
+&lt;h2&gt;1997-2001:  微软与Sun的Java官司&lt;/h2&gt;
+
+&lt;p&gt;Java诞生的1995年，正是微软在软件产业地位达到巅峰的时代，Windows 95发布时的风
+光场面给人们留下的深刻印象至今难忘。尽管如此，作为最卓越的技术领袖，比尔?盖茨
+仍然敏锐地注意到Java。当他了解了Java的一些细节之后，给予了这样的评价:“Java是
+很长时间以来最优秀的程序设计语言。”基于此，微软于1996年3月申请并获得了Java许
+可证。微软对于 Java的这一热情态度在当时大大提高了人们对Java的兴趣和信心，但也
+有不少人担心微软会依靠自己强大的影响力在标准之外另立标准，从而破坏Java 的纯洁
+性。&lt;/p&gt;
+
+&lt;p&gt;果然，从1997年发布Visual J++的第一个版本开始，微软就开始在Java中掺入自己的私
+有扩展。这毫无疑问引起Sun的高度重视。1997年10月，Sun向美国加州地方法院起诉微
+软公司违反两公司就微软使用Java技术所签定的合同，指控微软公司在自己的Java产品
+中做了“不恰当的修改”，违反了合同中承诺向用户提供Java 兼容产品的条款。这一官
+司旷日持久，直到2001年1月双方达成和解，微软将继续提供采用Sun开发的Java技术的
+现有产品（包括测试版）。不过， Sun有限制地仅对包括Java 1.1.4的微软产品提供许
+可。到了2001年7月，微软公布新版的Windows XP将不再支持Sun的JVM，并且推出了.NET
+平台与Java分庭抗礼。&lt;/p&gt;
+
+&lt;p&gt;现在回过头去看，当时的这一场官司对Java世界产生了深远的影响。如果没有这一场官
+司，也许很多Java程序员都在使用Visual J++，基于WFC开发Windows客户端程序，同时
+不得不面对被两个不同的事实标准所分裂的Java世界。&lt;/p&gt;
+
+&lt;h2&gt;1998：Java 2平台发布&lt;/h2&gt;
+
+&lt;p&gt;1998年，Java 2平台正式发布。经过了三年时间的发展、热热闹闹的攻关宣传、红红火
+火的众厂商的热情参与，Sun终于知道Java适合干什么了。对比Java刚发明时的技术定位
+，与Java的戏剧性触“网”的那段历史，Java 2平台的发布可真算得上是有的放矢了。
+根据官方的文档，Java 2是Sun意识到“one size doesn’t fit all”之后，把最初的J
+ava技术打包成三个版本的产物，也就是著名的J2ME、J2SE、J2EE。&lt;/p&gt;
+
+&lt;p&gt;之所以说Java自从Java 2平台发布之后，进入了现代。那是因为之前的历史怎么看来都
+和现在程序员日常开发使用的技术无什么关系，比如Applet，已经很少有人使用了。Jav
+a 2之后的历史就不一样了，至少人们在推崇轻量级开发，猛批EJB时还不时会引用J2EE
+这个词是如何诞生的。而Java 2的三大版本中，除了J2EE得到了长足发展和广泛使用之
+外，J2ME也在手机市场上取得了遍地开花的结果。相较之下，J2SE难免落寞，只剩SWT这
+个血统不纯的家伙在Rich Client回归的时代吸引着人们的眼球了。无论今天看来当时的
+Java 2有多么的不成熟，至少经过市场和时间的检验，Java 2规划出来的三大方向把Jav
+a技术指向了光明的方向是勿庸置疑的。&lt;/p&gt;
+
+&lt;h2&gt;1998：JCP成立并正式运作，Java开源社群开始蓬勃发展&lt;/h2&gt;
+
+&lt;p&gt;1998年，JCP组织成立，并且开始把握Java的发展方向。JCP组织的开放性，不但使得所
+有对Java感兴趣的商业公司可以参与Java的发展，更重要的是JCP允许个人、非盈利组织
+、学校等加入，这就给Java带来了巨大的活力。随之兴起的Java开源运动的最大贡献是
+实现和鼓励了知识共享，在众多热情的开源程序员们的努力和分享下，很多原先只被商
+业公司掌握的技术、思想和产品可以被所有需要的开发人员免费或者以较低的价格获得
+使用权, 并通过开放源代码更容易的获得反馈和改进意见从而进一步演化发展。我们知
+道，所谓知识不是孤立发展认知，而是人们的经验，认识是思考交流和积累的产物。而
+开源运动所带来的开放、反馈、交流的风气正是符合人类社会知识形成和发展的规律。
+开源运动起源于西方的发达国家，有其现实背景和文化根源。 1990年代可以说是IT产业
+的一个黄金时代。信息时代的兴起对IT人员，特别是软件人员有着巨大的需求。而软件
+开发又是一种类似艺术创作的脑力活动，和所有的艺术家、作家们一样，在作品打上自
+己的印记并流传在世界上是每一个创作人员的梦想。互联网时代下的高收入的舒适生活
+，早九晚五的编写公司的代码并不能满足很多有激情的软件开发人员的梦想，再加上西
+方传统的基督教文化中十分推崇的分享和交流，开源的出现和兴起也就水到渠成了。今
+天，开源运动已经不仅仅是一些个人天才程序员们的游乐园地，而是发展成为一项开源
+软件产业。&lt;/p&gt;
+
+&lt;h2&gt;1998：WebLogic打开J2EE的魔匣&lt;/h2&gt;
+
+&lt;p&gt;Java语言的出现使得互联网络有了良好的交互性能，但这些很“酷”的技术仅被人们认
+为是一些小花招，它还无法消除企业级用户对它的怀疑。1998 年，BEA公司宣布收购Web
+Logic公司，并接着推出由Sun公司第一个授权使用J2EE许可证的WebLogic Server应用服
+务器，这个Java版的AppServer一推出就引起业界极大的兴趣。WebLoigc Server以其对
+标准的支持、强悍的运算能力和安全的架构设计等特性也很快征服了那些怀疑J2EE应用
+的人们。推出市场后不到一年，WebLogic Server就成为业内第一Java应用服务器。
+这里我们援引一些当时著名咨询公司的调查数据来说明问题，“在IDC的报告中，BEA在
+应用服务器和交易服务器领域市场份额第一；在Gartner的报告中，BEA WebLogic 
+Server拥有业内最广泛的EJB应用安装基础；在Giga Group的报告中，BEA WebLogic 
+Server市场份额占32%”。&lt;/p&gt;
+
+&lt;p&gt;因为应用服务器市场极大的发展潜力，在WebLogic Server之后，其它的很多公司也推出
+了自己的AppServer，如IBM的WebSphere、Sun公司的iPlanet等，逐渐地应用服务器取代
+了传统意义上的各类中间件，成为企业应用的基础平台。应用服务器的出现使得Java有
+了真正意义上的发展。&lt;/p&gt;
+
+&lt;h2&gt;2002-2004: Sun与微软的法律碰撞最终以喜剧收场&lt;/h2&gt;
+
+&lt;p&gt;2003年4月2 日，Sun与微软达成16亿美元的法律和解。如果不是晚了一天，许多人会以
+为这是一个在4月1日愚人节开的玩笑。尽管当时所有人都像是看到“太阳从西边出来了
+”那样张大了嘴巴，但这的确是事实。&lt;/p&gt;
+
+&lt;p&gt;根据两家公司达成的版权协议，双方会为采用对方的技术而支付专利费用，微软向Sun提
+前支付3.5亿美元使用费，Sun则承诺，如果Sun集成微软的某些技术，也会向微软付款。&lt;/p&gt;
+
+&lt;p&gt;毫无疑问，“私下了结”的方式对双方而言都是最好的结果。就在协议签署的当天，在
+美国旧金山由Sun和微软为“抛弃十年恩怨、携手合作“举行的新闻发布会上，尽管比尔
+?盖茨没有到场，但这并没有防碍现场看起来异常轻松的气氛。麦克尼利和鲍尔默各自穿
+了一件密歇根州底特律“Red Wings”曲棍球队的运动服，并谈及了一起在哈佛大学读书
+的经历，麦克尼利还说:“当时我们两人是非常要好的朋友，当然我们也有吵架的时候。
+”人与人当然可能成为终生的知己，但是公司与公司之间有的只能是利益上的分分合合
+。&lt;/p&gt;
+
+&lt;h2&gt;2000-2004: JBoss和Eclipse ——Java开源软件的王者&lt;/h2&gt;
+
+&lt;p&gt;Java和开源几乎就是天生的一对，这可以从无比兴盛繁荣的Java开源软件社区得到佐证
+。目前最有影响力的Java开源软件项目，要数JBoss 和Eclipse。可以说，几乎所有的Ja
+va开发人员都获多或少的听到过或接触和使用过它们。前者是目前最优秀、应用最为广
+泛的企业级开源J2EE应用服务器，后者是功能完全可以替代商业产品的Java IDE。二者
+的覆盖功能之全、支持工具之广、子项目之多，几乎可以仅凭借它俩来完成企业应用的
+开发构建到部署实施的全过程，而软件开发者和客户也都可以最大程度上享受高质量，
+高可靠Java开源软件所带来的低成本优势。&lt;/p&gt;
+
+&lt;p&gt;JBoss和Eclipse的巨大成功，几乎令各自领域的商用竞争者抓狂，其中 BEA的WebLogic
+和IBM的WebSphere在商业利润上受到JBoss的巨大侵蚀，而Borland的JBuilder、JetBrai
+ns 的IDEA等诸多优秀的商用开发工具也不得不面对Eclipse独大的现实。JBoss的CEO兼
+创始人 Marc Fleury曾直言不讳地表示，希望占据市场主导地位。“我们希望打败IBM，
+成为中间件领域里最大的厂商。”JBoss在4.0以前还只是以一个 Group存在，盈利手段
+主要靠服务和销售文档。但在最近，JBoss已经发展成为一个有限公司，并吸纳多家风险
+投资，专注于获取利润为目标之一的第二代开源软件模式（JBoss自己称为“Profession
+al Open Source”）的创新和运营。这区别于以理论研究为爱好的学院型开源或大公司
+为基础的非盈利组织开源，如Linux和Apache。当然JBoss的这种运营方式势必会导致更
+多的代码控制和专有修改权，但按JBoss的说法是这样更能获得企业客户的信赖。JBoss
+的这种模式是否能获得成功还要我们拭目以待。&lt;/p&gt;
+
+&lt;p&gt;不管JBoss和Eclipse的未来发展如何，JBoss和Eclipse的成功已经让我们看到了Java开
+源软件的威力，祝愿它们一路走好。&lt;/p&gt;
+
+&lt;h2&gt;2004：Java 5.0&lt;/h2&gt;
+
+&lt;p&gt;2004年9月30日，代号为“Tiger”，研发历时近三年的J2SE 5.0发布正式版本，这是Jav
+a平台历来发布版本中改动面波及最大的一次。
+纵观Tiger，“Ease of development”是其核心主题，这一点着重体现于语言特性上的
+改进，这在很大程度上，简化了开发人员日常的编程任务，以往一些琐碎的手工劳动都
+代之以轻松自然，而又安全可靠的自动化实现。其中的注解功能，以及随之而来的声明
+式编程，还对构筑于J2SE 5.0之上的J2EE 5.0产生了巨大影响。尽管Tiger在语言特性上
+做了很大的动作，但作为Java技术的基础支撑，这些改动都是深思熟虑的结果。
+Tiger发布至今也有大半年了，那么Sun又是如何规划J2SE的未来蓝图的呢？据悉，J2SE
+的下两个版本分别是代号为“Mustang”的J2SE 6.0和代号为“Dolphin”的J2SE 7.0，
+预计Mustang将于明年发布。在吸取了Tiger研发周期过长的教训之后，Sun副总裁Graham
+ Hamilton表示，Mustang的发布周期将不会那么长。并且，Sun还将“Becoming more 
+open” 作为Mustang的主题之一。未来JCP对Java技术的影响将会愈加深入，而整个研发
+过程也将会愈加透明。Mustang在正式发布前的内部版本也会陆续见诸于众，如此，广大
+Java开发者便可以更加及时的了解到Java发展的最新情况。在语言层面上的扩展依然会
+比较谨慎，比如像AOP这样的当下热门技术，依然不太可能会见诸其中。据Hamilton所言
+，一个有可能被引入的语法特性被称作“friends”import机制，它将使由多个包组成的
+大型项目变得易于管理。&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>最重要的34个计算机算法</title>
+   <link href="http://highsp.cn/algorithm/2014/04/01/mostest-important-algorithms.html"/>
+   <updated>2014-04-01T00:00:00+08:00</updated>
+   <id>http://highsp.cn/algorithm/2014/04/01/mostest-important-algorithms</id>
+   <content type="html">&lt;ol&gt;
+&lt;li&gt;&lt;p&gt;A* 搜索算法——图形搜索算法，从给定起点到给定终点计算出路径。其中使用了一种启发式的估算，为每个节点估算通过该节点的最佳路径，并以之为各个地点排定次序。算法以得到的次序访问这些节点。因此，A*搜索算法是最佳优先搜索的范例。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;集束搜索（又名定向搜索，Beam Search）——最佳优先搜索算法的优化。使用启发式函数评估它检查的每个节点的能力。不过，集束搜索只能在每个深度中发现最前面的m个最符合条件的节点，m是固定数字——集束的宽度。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;二分查找（Binary Search）——在线性数组中找特定值的算法，每个步骤去掉一半不符合要求的数据。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;分支界定算法（Branch and Bound）——在多种最优化问题中寻找特定最优化解决方案的算法，特别是针对离散、组合的最优化。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Buchberger算法——一种数学算法，可将其视为针对单变量最大公约数求解的欧几里得算法和线性系统中高斯消元法的泛化。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;数据压缩——采取特定编码方案，使用更少的字节数（或是其他信息承载单元）对信息编码的过程，又叫来源编码。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Diffie-Hellman密钥交换算法——一种加密协议，允许双方在事先不了解对方的情况下，在不安全的通信信道中，共同建立共享密钥。该密钥以后可与一个对称密码一起，加密后续通讯。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Dijkstra算法——针对没有负值权重边的有向图，计算其中的单一起点最短算法。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;离散微分算法（Discrete differentiation）&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;动态规划算法（Dynamic Programming）——展示互相覆盖的子问题和最优子架构算法&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;欧几里得算法（Euclidean algorithm）——计算两个整数的最大公约数。最古老的算法之一，出现在公元前300前欧几里得的《几何原本》。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;期望-最大算法（Expectation-maximization algorithm，又名EM-Training）——在统计计算中，期望-最大算法在概率模型中寻找可能性最大的参数估算值，其中模型依赖于未发现的潜在变量。EM在两个步骤中交替计算，第一步是计算期望，利用对隐藏变量的现有估计值，计算其最大可能估计值；第二步是最大化，最大化在第一步上求得的最大可能值来计算参数的值。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;快速傅里叶变换（Fast Fourier transform，FFT）——计算离散的傅里叶变换（DFT）及其反转。该算法应用范围很广，从数字信号处理到解决偏微分方程，到快速计算大整数乘积。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;梯度下降（Gradient descent）——一种数学上的最优化算法。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;哈希算法（Hashing）&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;堆排序（Heaps）&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Karatsuba乘法——需要完成上千位整数的乘法的系统中使用，比如计算机代数系统和大数程序库，如果使用长乘法，速度太慢。该算法发现于1962年。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;LLL算法（Lenstra-Lenstra-Lovasz  lattice reduction）——以格规约（lattice）基数为输入，输出短正交向量基数。LLL算法在以下公共密钥加密方法中有大量使用：背包加密系统（knapsack）、有特定设置的RSA加密等等。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;最大流量算法（Maximum flow）——该算法试图从一个流量网络中找到最大的流。它优势被定义为找到这样一个流的值。最大流问题可以看作更复杂的网络流问题的特定情况。最大流与网络中的界面有关，这就是最大流-最小截定理（Max-flow min-cut theorem）。Ford-Fulkerson 能找到一个流网络中的最大流。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;合并排序（Merge Sort）&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;牛顿法（Newton&amp;#39;s method）——求非线性方程（组）零点的一种重要的迭代法。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Q-learning学习算法——这是一种通过学习动作值函数（action-value function）完成的强化学习算法，函数采取在给定状态的给定动作，并计算出期望的效用价值，在此后遵循固定的策略。Q-leanring的优势是，在不需要环境模型的情况下，可以对比可采纳行动的期望效用。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;两次筛法（Quadratic Sieve）——现代整数因子分解算法，在实践中，是目前已知第二快的此类算法（仅次于数域筛法Number Field Sieve）。对于110位以下的十位整数，它仍是最快的，而且都认为它比数域筛法更简单。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;RANSAC——是“RANdom SAmple Consensus”的缩写。该算法根据一系列观察得到的数据，数据中包含异常值，估算一个数学模型的参数值。其基本假设是：数据包含非异化值，也就是能够通过某些模型参数解释的值，异化值就是那些不符合模型的数据点。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;RSA——公钥加密算法。首个适用于以签名作为加密的算法。RSA在电商行业中仍大规模使用，大家也相信它有足够安全长度的公钥。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Schönhage-Strassen算法——在数学中，Schönhage-Strassen算法是用来完成大整数的乘法的快速渐近算法。其算法复杂度为：O(N log(N) log(log(N)))，该算法使用了傅里叶变换。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;单纯型算法（Simplex Algorithm）——在数学的优化理论中，单纯型算法是常用的技术，用来找到线性规划问题的数值解。线性规划问题包括在一组实变量上的一系列线性不等式组，以及一个等待最大化（或最小化）的固定线性函数。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;奇异值分解（Singular value decomposition，简称SVD）——在线性代数中，SVD是重要的实数或复数矩阵的分解方法，在信号处理和统计中有多种应用，比如计算矩阵的伪逆矩阵（以求解最小二乘法问题）、解决超定线性系统（overdetermined linear systems）、矩阵逼近、数值天气预报等等。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;求解线性方程组（Solving a system of linear equations）——线性方程组是数学中最古老的问题，它们有很多应用，比如在数字信号处理、线性规划中的估算和预测、数值分析中的非线性问题逼近等等。求解线性方程组，可以使用高斯—约当消去法（Gauss-Jordan elimination），或是柯列斯基分解（ Cholesky decomposition）。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Strukturtensor算法——应用于模式识别领域，为所有像素找出一种计算方法，看看该像素是否处于同质区域（ homogenous region），看看它是否属于边缘，还是是一个顶点。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;合并查找算法（Union-find）——给定一组元素，该算法常常用来把这些元素分为多个分离的、彼此不重合的组。不相交集（disjoint-set）的数据结构可以跟踪这样的切分方法。合并查找算法可以在此种数据结构上完成两个有用的操作：&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;查找：判断某特定元素属于哪个组。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;合并：联合或合并两个组为一个组。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;维特比算法（Viterbi algorithm）——寻找隐藏状态最有可能序列的动态规划算法，这种序列被称为维特比路径，其结果是一系列可以观察到的事件，特别是在隐藏的Markov模型中。&lt;/p&gt;&lt;/li&gt;
+&lt;/ol&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>最重要的34个计算机算法</title>
+   <link href="http://highsp.cn/code/algorithm/2014/04/01/mostest-important-algorithms.html"/>
+   <updated>2014-04-01T00:00:00+08:00</updated>
+   <id>http://highsp.cn/code/algorithm/2014/04/01/mostest-important-algorithms</id>
+   <content type="html">&lt;ol&gt;
+&lt;li&gt;&lt;p&gt;A* 搜索算法——图形搜索算法，从给定起点到给定终点计算出路径。其中使用了一种启发式的估算，为每个节点估算通过该节点的最佳路径，并以之为各个地点排定次序。算法以得到的次序访问这些节点。因此，A*搜索算法是最佳优先搜索的范例。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;集束搜索（又名定向搜索，Beam Search）——最佳优先搜索算法的优化。使用启发式函数评估它检查的每个节点的能力。不过，集束搜索只能在每个深度中发现最前面的m个最符合条件的节点，m是固定数字——集束的宽度。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;二分查找（Binary Search）——在线性数组中找特定值的算法，每个步骤去掉一半不符合要求的数据。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;分支界定算法（Branch and Bound）——在多种最优化问题中寻找特定最优化解决方案的算法，特别是针对离散、组合的最优化。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Buchberger算法——一种数学算法，可将其视为针对单变量最大公约数求解的欧几里得算法和线性系统中高斯消元法的泛化。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;数据压缩——采取特定编码方案，使用更少的字节数（或是其他信息承载单元）对信息编码的过程，又叫来源编码。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Diffie-Hellman密钥交换算法——一种加密协议，允许双方在事先不了解对方的情况下，在不安全的通信信道中，共同建立共享密钥。该密钥以后可与一个对称密码一起，加密后续通讯。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Dijkstra算法——针对没有负值权重边的有向图，计算其中的单一起点最短算法。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;离散微分算法（Discrete differentiation）&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;动态规划算法（Dynamic Programming）——展示互相覆盖的子问题和最优子架构算法&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;欧几里得算法（Euclidean algorithm）——计算两个整数的最大公约数。最古老的算法之一，出现在公元前300前欧几里得的《几何原本》。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;期望-最大算法（Expectation-maximization algorithm，又名EM-Training）——在统计计算中，期望-最大算法在概率模型中寻找可能性最大的参数估算值，其中模型依赖于未发现的潜在变量。EM在两个步骤中交替计算，第一步是计算期望，利用对隐藏变量的现有估计值，计算其最大可能估计值；第二步是最大化，最大化在第一步上求得的最大可能值来计算参数的值。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;快速傅里叶变换（Fast Fourier transform，FFT）——计算离散的傅里叶变换（DFT）及其反转。该算法应用范围很广，从数字信号处理到解决偏微分方程，到快速计算大整数乘积。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;梯度下降（Gradient descent）——一种数学上的最优化算法。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;哈希算法（Hashing）&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;堆排序（Heaps）&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Karatsuba乘法——需要完成上千位整数的乘法的系统中使用，比如计算机代数系统和大数程序库，如果使用长乘法，速度太慢。该算法发现于1962年。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;LLL算法（Lenstra-Lenstra-Lovasz  lattice reduction）——以格规约（lattice）基数为输入，输出短正交向量基数。LLL算法在以下公共密钥加密方法中有大量使用：背包加密系统（knapsack）、有特定设置的RSA加密等等。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;最大流量算法（Maximum flow）——该算法试图从一个流量网络中找到最大的流。它优势被定义为找到这样一个流的值。最大流问题可以看作更复杂的网络流问题的特定情况。最大流与网络中的界面有关，这就是最大流-最小截定理（Max-flow min-cut theorem）。Ford-Fulkerson 能找到一个流网络中的最大流。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;合并排序（Merge Sort）&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;牛顿法（Newton&amp;#39;s method）——求非线性方程（组）零点的一种重要的迭代法。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Q-learning学习算法——这是一种通过学习动作值函数（action-value function）完成的强化学习算法，函数采取在给定状态的给定动作，并计算出期望的效用价值，在此后遵循固定的策略。Q-leanring的优势是，在不需要环境模型的情况下，可以对比可采纳行动的期望效用。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;两次筛法（Quadratic Sieve）——现代整数因子分解算法，在实践中，是目前已知第二快的此类算法（仅次于数域筛法Number Field Sieve）。对于110位以下的十位整数，它仍是最快的，而且都认为它比数域筛法更简单。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;RANSAC——是“RANdom SAmple Consensus”的缩写。该算法根据一系列观察得到的数据，数据中包含异常值，估算一个数学模型的参数值。其基本假设是：数据包含非异化值，也就是能够通过某些模型参数解释的值，异化值就是那些不符合模型的数据点。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;RSA——公钥加密算法。首个适用于以签名作为加密的算法。RSA在电商行业中仍大规模使用，大家也相信它有足够安全长度的公钥。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Schönhage-Strassen算法——在数学中，Schönhage-Strassen算法是用来完成大整数的乘法的快速渐近算法。其算法复杂度为：O(N log(N) log(log(N)))，该算法使用了傅里叶变换。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;单纯型算法（Simplex Algorithm）——在数学的优化理论中，单纯型算法是常用的技术，用来找到线性规划问题的数值解。线性规划问题包括在一组实变量上的一系列线性不等式组，以及一个等待最大化（或最小化）的固定线性函数。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;奇异值分解（Singular value decomposition，简称SVD）——在线性代数中，SVD是重要的实数或复数矩阵的分解方法，在信号处理和统计中有多种应用，比如计算矩阵的伪逆矩阵（以求解最小二乘法问题）、解决超定线性系统（overdetermined linear systems）、矩阵逼近、数值天气预报等等。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;求解线性方程组（Solving a system of linear equations）——线性方程组是数学中最古老的问题，它们有很多应用，比如在数字信号处理、线性规划中的估算和预测、数值分析中的非线性问题逼近等等。求解线性方程组，可以使用高斯—约当消去法（Gauss-Jordan elimination），或是柯列斯基分解（ Cholesky decomposition）。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Strukturtensor算法——应用于模式识别领域，为所有像素找出一种计算方法，看看该像素是否处于同质区域（ homogenous region），看看它是否属于边缘，还是是一个顶点。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;合并查找算法（Union-find）——给定一组元素，该算法常常用来把这些元素分为多个分离的、彼此不重合的组。不相交集（disjoint-set）的数据结构可以跟踪这样的切分方法。合并查找算法可以在此种数据结构上完成两个有用的操作：&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;查找：判断某特定元素属于哪个组。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;合并：联合或合并两个组为一个组。&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;维特比算法（Viterbi algorithm）——寻找隐藏状态最有可能序列的动态规划算法，这种序列被称为维特比路径，其结果是一系列可以观察到的事件，特别是在隐藏的Markov模型中。&lt;/p&gt;&lt;/li&gt;
+&lt;/ol&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>解密中国互联网</title>
+   <link href="http://highsp.cn/internet/2014/03/28/deep-inside-chinese-internet.html"/>
+   <updated>2014-03-28T00:00:00+08:00</updated>
+   <id>http://highsp.cn/internet/2014/03/28/deep-inside-chinese-internet</id>
+   <content type="html">&lt;p&gt;前言
+    修改一下前言，那个，本来呢，写这样一篇文章，刻意避开微博，很想测试一下朋友圈的传播效应；but，冯大辉坏了我的好事，如果是别人转到微博，我还可以认为是噪音数据，@fenng的威力太大，我现在已经无法有效甄别朋友圈和微博的来访比例了。不知道百度的童鞋是否可以帮我分析一下。
+    另外，修改错别字及部分勘误，增补一项内容。&lt;/p&gt;
+
+&lt;p&gt;1、中国互联网的构成&lt;/p&gt;
+
+&lt;p&gt;如之前冯大辉总结，中国互联网分三个层面；第一层面是媒体上的互联网，也就是大众容易识别和认识的互联网；第二层面是草根互联网，这是中国互联网巨大的组成部分，却极少在公众面前出现；第三层面是黑暗互联网，其实它一直以来，非常巨大，非常恐怖，以至于，往往因为某些疏漏造成了全国性的事件，人们才能窥到冰山一角。&lt;/p&gt;
+
+&lt;p&gt;第一种，媒体上的互联网，主要的思路是，覆盖尽可能多的用户，生怕别人不知道自己；搞个发布会，要给记者塞车马费，各种软文公关铺天盖地。&lt;/p&gt;
+
+&lt;p&gt;第二种，很多年以前，我一直以为是他们不掌握媒体资源，所以被忽视；后来和这些人接触多了，才理解，其实草根互联网，很多是怕媒体的，怕被精英和同行了解，原因很简单，他们都很担心，如果巨头理解了他们的业务构成，理解了他们的用户获取方式，恐怕很快，他们就会失去一切归零； 还记得风风火火的开心网么？各种人给开心网的衰败找了无数理由，我只陈述一个简单的事实，QQ农场上线的时间，就是开心网由盛转衰的转折点。&lt;/p&gt;
+
+&lt;p&gt;草根互联网，生存壮大于巨头看不起的环境，并依赖于特定的受众群发展，他们的思路是，我照顾好我的用户就得了，精英们最好别知道。&lt;/p&gt;
+
+&lt;p&gt;当然，壮大后的草根互联网，往往也会转入媒体上的互联网，比如最近，forgame上市，多少媒体如梦方醒，多少媒体人开始疯狂补课，这公司哪里冒出来的？&lt;/p&gt;
+
+&lt;p&gt;草根互联网的典范有，2004年之前的hao123；2012年之前的4399，各种地方社区如化龙巷，小鱼社区，西子湖畔；8684公交查询，9158等等。&lt;/p&gt;
+
+&lt;p&gt;其实，在2002年之前，QQ也是草根互联网的典范。有谁记得，当年南非电讯投资QQ的时候，多少业内专家笑话南非人SB，事实证明，谁是SB?&lt;/p&gt;
+
+&lt;p&gt;第三种，黑暗互联网，他们隐藏的更深，只有在特定的时间，特定的事件，才会一不小心暴露在媒体面前；还记得六省断网么？还记得前几天突然半夜里 .cn域名解析全部挂掉了么？这就是黑暗互联网擦枪走火的事情，这个领域包括但不限于私服（百亿+市场贵规模），外挂，组织性盗号，地下账号交易及漏洞黑市，网络诈骗，DDOS攻击产业（与私服产业密切相关），黑卡；单纯的孩子可能会认为，这事交给警察叔叔不就好了，中国那么多网警；这个，据我粗陋的了解，这个，我是不敢在公开文字里披露的。&lt;/p&gt;
+
+&lt;p&gt;只说一个小例子，当年Xfocus论坛有个热帖，两个黑产的代表人物因分赃不均在论坛骂战，互揭老底，辗转翻了几百页，成为神贴，后被有关部门勒令锁帖，至于内容，很黄很暴力就是了。&lt;/p&gt;
+
+&lt;p&gt;盛大最后与私服行业全面和解，成为中国特色的合法私服产业，这个背景，不说了。&lt;/p&gt;
+
+&lt;p&gt;2、中国互联网的发展逻辑&lt;/p&gt;
+
+&lt;p&gt;第一，用户比客户重要&lt;/p&gt;
+
+&lt;p&gt;最早一些商业精英有一个思路，说是生意离钱越近，赚钱就越近。&lt;/p&gt;
+
+&lt;p&gt;但是在互联网，这个逻辑是错的；不论中国还是美国，这个逻辑都是错的；前段时间周鸿祎借用了毛泽东的说法“人在地失，人地皆存；人亡地在，人地皆失”，人就是用户，地就是收益；说的是对的。&lt;/p&gt;
+
+&lt;p&gt;范例1：最早推出竞价排名的公司，叫做overture，这个生意模式很好，也发展了足够的客户，依赖于与雅虎和谷歌的合作，一度成为市场上最受资本追捧的公司，但是问题是，他只有商业模式和客户，却没有属于自己的用户；突然有一天，google宣布，不再和overture合作，自己建立广告系统，一夜之间，这家公司的业绩下降2/3；祸不单行的是，雅虎也找了过来，要不卖给我，要不我们也学google自建广告系统；overture连还价的机会都没有；只好委身变卖。 有最优质的客户，有最牛b的商业模式，没有用户基础。  此外，DoubleClick 同理。有兴趣的童鞋可以查一下，doubleclick，全球最大的广告中介平台，拥有最强大的广告发布算法，覆盖全球的优质客户基础，因为没有自己的用户群，是怎样股价狂跌，最后被迫卖给google的。&lt;/p&gt;
+
+&lt;p&gt;范例2：263免费电子邮局，曾经市场第一，为了追求收入；强制升级到全面付费版本；他们的逻辑是，邮件地址类似于手机号码，高端人群不会随意变更邮件地址；结果，可笑的是，不但他们丢失了免费用户，付费用户也流失殆尽，中国互联网的奇葩案例。&lt;/p&gt;
+
+&lt;p&gt;范例3：QQ 马化腾最初做QQ并没有自己做运营平台的想法，只是想把系统卖给运营商；结果运营商从软件工程的思路来考核，这个东西多少人月做出来的? 这么一算，QQ连100万人民币都卖不掉！ 100万人民币，你没看错！！当时马化腾几乎80万人民币就卖掉了QQ，可这时恰好看到了AOL收购ICQ的新闻，1亿多美金好像，是按照一个用户多少钱算的，pony眼睛一亮，原来互联网上，用户=钱！然后他按照这个估值重新估价，结果中国的各种互联网精英嘲笑不已，新浪各种白领用户还可以算点钱，QQ那些小p孩也值钱？别开玩笑了！IDG当真了，南非人当真了，那些精英们就说，看，SB非洲人，被马化腾忽悠了吧。 今天还会有人质疑QQ的用户不值钱么？ 但是就在最近两年，还有不少人质疑4399的用户不值钱，这个，我就只能呵呵了。&lt;/p&gt;
+
+&lt;p&gt;范例4：百度， 谁还记得当年，百度不过是一个技术服务商，那时候流行一个词叫ASP (application Service Provider)，投资圈的故事是，美国掘金，卖裤子的发财了，百度当时走的就是这个路线，给门户提供技术引擎，但后来为了发展自己的用户平台，得罪了最大的客户新浪。当时媒体一股脑认为，霸主新浪分分钟捏死创业公司百度。so，今天你看到robin li 意义风发的讲商业模式多么重要，我只提醒大家一句，当年他颠覆的就是以客户为中心的模式，才有了百度后来的辉煌。&lt;/p&gt;
+
+&lt;p&gt;范例5：360，周鸿祎前段时间分享的文章提到的案例，免费杀毒，取悦用户，一年1.8亿杀毒软件分成不要了，得罪了自己最大的客户。后来的回报，是当初的10倍。 是的，我知道这条很多人会有争议，我知道有不少朋友一提360必然要讲出一堆七七八八的问题；我只陈述这个事实，其他的，大家自由发挥。&lt;/p&gt;
+
+&lt;p&gt;第二，草根比精英重要&lt;/p&gt;
+
+&lt;p&gt;最初，投资圈好说一句话，80%的财富集中在20%的用户身上，所以，服务好这些人，就可以赚到大钱，事实证明，在中国互联网，服务好草根用户，才是王道&lt;/p&gt;
+
+&lt;p&gt;范例1：网址站的奇迹；我知道很多人还是没搞清楚360怎么赚的钱；我告诉你们，他们最大的收入来源，其实就是360的网址导航；各位知道么? 百度收购hao123后，一直是低调处理，闷声赚钱；但是今天，你去百度再看看，hao123已经迅速扩充为独立事业部门，并且拥有了自己的联盟渠道业务，以及非常宽松的预算，为什么？百度和360的对抗重心，在流量入口，而这个流量入口，绝大部分，集中在网址导航。网址导航，草根用户的上网入口，多少精英不屑一顾。&lt;/p&gt;
+
+&lt;p&gt;范例2：还是QQ，中国互联网的大哥大，一度被认为是低端用户的产品毫无价值，前些年，有一种风气，商业人士用MSN，小p孩才用QQ，我跟身边的朋友说，想不脱离中国互联网，就别放弃QQ，事实证明，我是对的；当然，今天你有了放弃的理由，因为微信出来了。&lt;/p&gt;
+
+&lt;p&gt;范例3：唯品会，中国已上市的电商公司里，貌似表现最好的就是唯品会；谁还记得，当年唯品会创业，信誓旦旦的认为，中国奢侈品消费进入爆发期，赚有钱人的钱，才是王道，结果烧光了多少美金？一路亏钱，后来痛定思痛，决心转型，主打二三线品牌促销，降低用户消费层次，一下子爆发了，钱也赚到了。这个例子最典型不过！&lt;/p&gt;
+
+&lt;p&gt;范例4：域名生意， 1997年，我在北京读书，开始给互联网公司打工，那时候的互联网公司，和现在不能比，就是注册域名做企业网站的，当时，我们认为，好的域名，就是英文域名，数字的、汉语拼音的，弱爆了，谁会去用。当时的互联网，是精英互联网。而英文域名，基本上老外都注册光了，所以，我们认为，1997年，没什么好域名可以买了。 2001年还是2002年，蔡文胜先生才进入域名行业，汉语拼音，是中国人熟悉的；而数字域名，是输入难度系数最低的。草根需求远大于精英需求。说自己没有眼光，就是当时一直没有意识到，草根需求才是互联网王道。&lt;/p&gt;
+
+&lt;p&gt;第三，跨界优势及资源副作用。&lt;/p&gt;
+
+&lt;p&gt;caoz做过几年传统的IT行业，一直以为资源是决定成败的关键因素；但是在互联网接触了几年，越来越发现，资源优势方，往往因为资源优势，忽视了用户体验和用户诉求，在竞争中，动作迟缓，拼劲不足，往往落败。&lt;/p&gt;
+
+&lt;p&gt;越有资源越不行，几乎成为互联网铁律；而目前包括百度，腾讯，也出现了这样的反思，他们内部叫做“富二代思维”，百度，腾讯的内部产品，往往有富二代的思路，仰仗资源，反而缺乏竞争力。&lt;/p&gt;
+
+&lt;p&gt;先说几个资源副作用范例&lt;/p&gt;
+
+&lt;p&gt;范例1：微信是腾讯爆发的重要产品，但是，微信却并非腾讯嫡系团队的战果，腾讯移动部门几百人，在移动互联网领域屡屡错失良机，广州的电子邮局团队，反而爆发了巨大的冲击力。&lt;/p&gt;
+
+&lt;p&gt;范例2：新浪刚出来火的时候，有一家新闻网站高调出世，就是千龙新闻网；当时千龙新闻网是传统媒体集团的产物，有各大传统媒体的合法授权，简单说，可以认为是官二代；当时一群评论家认为，千龙新闻网的资源优势远胜新浪网，新浪将会很快被终结；而事实是，这种衔着金钥匙出生的网站，注定没有竞争力，居然一度沦落为链接农场，成为搜索引擎要格外注意的垃圾链接来源网站。&lt;/p&gt;
+
+&lt;p&gt;再说跨界竞争案例，跨界竞争者，不受行业思维局限，敢于求变，一动手就颠覆你的商业模式，往往出其不意。&lt;/p&gt;
+
+&lt;p&gt;范例1：史玉柱搞游戏&lt;/p&gt;
+
+&lt;p&gt;当时认为搞保健品的弄游戏纯粹是乱来，多少资深游戏人都给史玉柱的游戏下了一定不行的结论；结果呢？虽然今天我们说巨人似乎后续的产品也不见得多好；但是游戏行业公认的一点是，征途颠覆了游戏的传统商业模式，这个模式已经被人称为中国模式。而后续中国的页游，手游，都延续了这一模式，从按时间付费转为免费游戏，道具付费。&lt;/p&gt;
+
+&lt;p&gt;范例2：360搞杀毒&lt;/p&gt;
+
+&lt;p&gt;360瑞星大战一开始，我就认为瑞星输定了，我的判断依据是，互联网模式必将击碎传统软件模式，事实正如我预料。所有传统的IT公司，都应该从此吸取教训。&lt;/p&gt;
+
+&lt;p&gt;范例3：小米搞手机&lt;/p&gt;
+
+&lt;p&gt;虽然我一直还算是比较看的开跨界竞争的，当初我还是认为雷军越界太大了，用互联网的思路逆袭传统生产领域似乎不太可能，但事实击碎了我的判断。&lt;/p&gt;
+
+&lt;p&gt;范例4：新上市的 forgame&lt;/p&gt;
+
+&lt;p&gt;这个公司的高管，创始人，没有一个传统游戏行业的人！在页游初起，火爆的时候，传统的游戏公司在干什么？看不见，看不起，看不透，做不来，追不上，就这五个步骤。没有游戏行业背景，反而没有包袱和思维定势，更敢放手一搏。&lt;/p&gt;
+
+&lt;p&gt;当然，要说页游这个领域，这些年的新贵都是跨界高手，比如心动游戏，比如恺英网络，比如游族，等等等等。&lt;/p&gt;
+
+&lt;p&gt;第四，视野比勤奋更重要&lt;/p&gt;
+
+&lt;p&gt;勤奋当然重要，但正确的视野，会让你的勤奋，以n倍增值。&lt;/p&gt;
+
+&lt;p&gt;范例1： 我有个认识超过10年的朋友叫苏光升，他以前做了一个智能手机社区，是关于塞班的，但是做的规模并不大，大概市场第三的样子，苦巴巴的坚持着；后来因缘际会认识蔡文胜先生，蔡老板和当时的市场第一谈了谈，建议对方转型安卓，对方表示塞班市场如日中天，没有转型的必要；蔡先生后来和苏光升聊了聊，那时候安卓的市场占有率好像还不足5%，苏光升对安卓的前途也是半信半疑，后来又请教了创新工场的汪华先生，两位牛人的一致判断让他有了主心骨，坚决转型，结果在很短的时间内，接连做出了极为有影响力的安卓产品，并且得到了巨头公司的认可和资本合作，公司的估值在两年时间增值了几十倍；原来被认为遥不可及的竞争对手，现在，嗯，在后面遥不可及的位置。&lt;/p&gt;
+
+&lt;p&gt;范例2：2004年，我第一次见俞军，听他讲搜索引擎，他说，搜索引擎是改变人类知识获取能力的一种革命，与造纸术，活字印刷并列。这些年我反思，为什么当初那么多公司有做搜索引擎，却只有百度脱颖而出，因为很多人，包括我们熟知的很多巨头，也包括当时的周鸿祎，张朝阳，只是把搜索引擎当做一种工具，一种获利手段，一种模式；只有足够视野的人，才会意识到，搜索引擎所带来的冲击和变革，是多么的巨大和深远！2004年，谁会相信，一个搜索引擎公司，可以颠覆如日中天的门户呢，实际上，2001年，俞军就已经预见到了。事实证明，他的远见，成就了百度，也成就了他自己。&lt;/p&gt;
+
+&lt;p&gt;第五，免费的是最贵的&lt;/p&gt;
+
+&lt;p&gt;这个真的是中国特色的，好像是史玉柱最早说的？不太确定，但是史玉柱绝对是一个典型的代表。&lt;/p&gt;
+
+&lt;p&gt;巨人集团的游戏，不但免费玩，还给玩家付工资？传统游戏人会觉得不可思议，但是最后算下来，收益率却高的惊人。这一模式已经成为中国游戏领域的黄金法则。&lt;/p&gt;
+
+&lt;p&gt;植物大战僵尸2，在全球都是付费下载，只有中国是免费下载，但是、只有中国市场，付费道具最贵！这也算是本土化的一个范例了。 当然，举这个例子并不代表我认可这种行为。&lt;/p&gt;
+
+&lt;p&gt;360，免费杀毒后，收益已经超过了之前杀毒行业总和的n倍。&lt;/p&gt;
+
+&lt;p&gt;淘宝 Vs Ebay ，用免费开店模式+草根网站推广  秒杀了 付费开店模式+门户网站排他广告。&lt;/p&gt;
+
+&lt;p&gt;但是今天我们看最新披露的数据，淘宝的利润水平远超ebay，不是远超ebay中国，是远超ebay全球。神奇不？&lt;/p&gt;
+
+&lt;p&gt;纯正的中国特色，免费是最成功的商业模式。&lt;/p&gt;
+
+&lt;p&gt;周鸿祎说，也许有一天，硬件会免费。&lt;/p&gt;
+
+&lt;p&gt;这一天有多远不知道，但是极路由已经用低于成本价销售了，我理解为，这是一个信号。&lt;/p&gt;
+
+&lt;p&gt;很久没有写这么长的文章了，如果您觉得这个文章还不错，请分享到微信朋友圈。&lt;/p&gt;
+
+&lt;p&gt;微博我就不发了，您也别发了，实话说，氛围越来越差。&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>我的算法列表</title>
+   <link href="http://highsp.cn/algorithm/2014/03/27/my-algorithm-list.html"/>
+   <updated>2014-03-27T00:00:00+08:00</updated>
+   <id>http://highsp.cn/algorithm/2014/03/27/my-algorithm-list</id>
+   <content type="html">&lt;p&gt;Binomial Heap&lt;/p&gt;
+
+&lt;p&gt;Bounded Priority Queue&lt;/p&gt;
+
+&lt;p&gt;Matrix&lt;/p&gt;
+
+&lt;p&gt;VList&lt;/p&gt;
+
+&lt;p&gt;Function wrapper&lt;/p&gt;
+
+&lt;p&gt;String&lt;/p&gt;
+
+&lt;p&gt;Nstream&lt;/p&gt;
+
+&lt;p&gt;Snake&lt;/p&gt;
+
+&lt;p&gt;Mergesort&lt;/p&gt;
+
+&lt;p&gt;Next Permutation&lt;/p&gt;
+
+&lt;p&gt;Interval Heap&lt;/p&gt;
+
+&lt;p&gt;Linear-Time Selection&lt;/p&gt;
+
+&lt;p&gt;Union-Find&lt;/p&gt;
+
+&lt;p&gt;Radix Sort&lt;/p&gt;
+
+&lt;p&gt;Rational&lt;/p&gt;
+
+&lt;p&gt;DPLL&lt;/p&gt;
+
+&lt;p&gt;Smoothsort&lt;/p&gt;
+
+&lt;p&gt;Extendible Array&lt;/p&gt;
+
+&lt;p&gt;In-Place Merge&lt;/p&gt;
+
+&lt;p&gt;Random Shuffle&lt;/p&gt;
+
+&lt;p&gt;Random Sample&lt;/p&gt;
+
+&lt;p&gt;Natural Mergesort&lt;/p&gt;
+
+&lt;p&gt;Interpolation Search&lt;/p&gt;
+
+&lt;p&gt;Introsort&lt;/p&gt;
+
+&lt;p&gt;Hashed Array Tree&lt;/p&gt;
+
+&lt;p&gt;Recurrence Solver&lt;/p&gt;
+
+&lt;p&gt;Fibonacci Heap&lt;/p&gt;
+
+&lt;p&gt;Dijkstra&amp;#39;s Algorithm&lt;/p&gt;
+
+&lt;p&gt;Prim&amp;#39;s Algorithm&lt;/p&gt;
+
+&lt;p&gt;Kruskal&amp;#39;s Algorithm&lt;/p&gt;
+
+&lt;p&gt;Majority Element&lt;/p&gt;
+
+&lt;p&gt;Haar Transform&lt;/p&gt;
+
+&lt;p&gt;Argmax&lt;/p&gt;
+
+&lt;p&gt;Derivative&lt;/p&gt;
+
+&lt;p&gt;Skiplist&lt;/p&gt;
+
+&lt;p&gt;van Emde Boas Tree&lt;/p&gt;
+
+&lt;p&gt;Cuckoo HashMap&lt;/p&gt;
+
+&lt;p&gt;Needleman-Wunsch Algorithm&lt;/p&gt;
+
+&lt;p&gt;Treap&lt;/p&gt;
+
+&lt;p&gt;Floyd-Warshall Algorithm&lt;/p&gt;
+
+&lt;p&gt;Power Iteration&lt;/p&gt;
+
+&lt;p&gt;Edmonds&amp;#39;s Matching Algorithm&lt;/p&gt;
+
+&lt;p&gt;Kosaraju&amp;#39;s Algorithm&lt;/p&gt;
+
+&lt;p&gt;2-SAT&lt;/p&gt;
+
+&lt;p&gt;Bellman-Ford Algorithm&lt;/p&gt;
+
+&lt;p&gt;Graham Scan&lt;/p&gt;
+
+&lt;p&gt;Bipartite Testing&lt;/p&gt;
+
+&lt;p&gt;Johnson&amp;#39;s Algorithm&lt;/p&gt;
+
+&lt;p&gt;Strassen Algorithm&lt;/p&gt;
+
+&lt;p&gt;Cartesian Tree Sort&lt;/p&gt;
+
+&lt;p&gt;Ford-Fulkerson Algorithm&lt;/p&gt;
+
+&lt;p&gt;Scaling Ford-Fulkerson&lt;/p&gt;
+
+&lt;p&gt;Splay Tree&lt;/p&gt;
+
+&lt;p&gt;Ternary Search Tree&lt;/p&gt;
+
+&lt;p&gt;Ring Buffer&lt;/p&gt;
+
+&lt;p&gt;AVL Tree&lt;/p&gt;
+
+&lt;p&gt;Rabin-Karp Algorithm&lt;/p&gt;
+
+&lt;p&gt;RPN Evaluator&lt;/p&gt;
+
+&lt;p&gt;Shunting-Yard Algorithm&lt;/p&gt;
+
+&lt;p&gt;Skew Binomial Heap&lt;/p&gt;
+
+&lt;p&gt;2/3 Heap&lt;/p&gt;
+
+&lt;p&gt;Zeckendorf Logarithm&lt;/p&gt;
+
+&lt;p&gt;Factoradic Permutations&lt;/p&gt;
+
+&lt;p&gt;Binary Cyclic Subsets&lt;/p&gt;
+
+&lt;p&gt;Fibonacci Iterator&lt;/p&gt;
+
+&lt;p&gt;Fibonacci Search&lt;/p&gt;
+
+&lt;p&gt;Euclid&amp;#39;s Algorithm&lt;/p&gt;
+
+&lt;p&gt;Find Duplicate&lt;/p&gt;
+
+&lt;p&gt;Permutation Generator&lt;/p&gt;
+
+&lt;p&gt;Matrix Find&lt;/p&gt;
+
+&lt;p&gt;Binary GCD&lt;/p&gt;
+
+&lt;p&gt;Knuth-Morris-Pratt Algorithm&lt;/p&gt;
+
+&lt;p&gt;Kadane&amp;#39;s Algorithm&lt;/p&gt;
+
+&lt;p&gt;Karatsuba&amp;#39;s Algorithm&lt;/p&gt;
+
+&lt;p&gt;Min-Stack&lt;/p&gt;
+
+&lt;p&gt;Random Bag&lt;/p&gt;
+
+&lt;p&gt;Min-Queue&lt;/p&gt;
+
+&lt;p&gt;Lights-Out Solver&lt;/p&gt;
+
+&lt;p&gt;Maximum Single-Sell Profit&lt;/p&gt;
+
+&lt;p&gt;Generalized Kadane&amp;#39;s Algorithm&lt;/p&gt;
+
+&lt;p&gt;Longest Range&lt;/p&gt;
+
+&lt;p&gt;Egyptian Fractions&lt;/p&gt;
+
+&lt;p&gt;LL(1) Parser Generator&lt;/p&gt;
+
+&lt;p&gt;LR(0) Parser Generator&lt;/p&gt;
+
+&lt;p&gt;Word Ladders&lt;/p&gt;
+
+&lt;p&gt;Alias Method&lt;/p&gt;
+
+&lt;p&gt;Ternary Sierpinski Triangle&lt;/p&gt;
+
+&lt;p&gt;Bitonic Euclidean Traveling-salesman Problem&lt;/p&gt;
+
+&lt;p&gt;Binary Search Tree&lt;/p&gt;
+
+&lt;p&gt;Heapsort&lt;/p&gt;
+
+&lt;p&gt;Longest Common Subsequence&lt;/p&gt;
+
+&lt;p&gt;Levenshtein Distance(Edit Distance)&lt;/p&gt;
+
+&lt;p&gt;Longest Increasing Subsequence&lt;/p&gt;
+
+&lt;p&gt;Longest Palindromic Subsequence&lt;/p&gt;
+
+&lt;p&gt;Longest Simple Path(DAG)&lt;/p&gt;
+
+&lt;p&gt;Matrix-chain Multiplication&lt;/p&gt;
+
+&lt;p&gt;Quicksort&lt;/p&gt;
+
+&lt;p&gt;Topological Sort&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>我的算法列表</title>
+   <link href="http://highsp.cn/code/algorithm/2014/03/27/my-algorithm-list.html"/>
+   <updated>2014-03-27T00:00:00+08:00</updated>
+   <id>http://highsp.cn/code/algorithm/2014/03/27/my-algorithm-list</id>
+   <content type="html">&lt;p&gt;Binomial Heap&lt;/p&gt;
+
+&lt;p&gt;Bounded Priority Queue&lt;/p&gt;
+
+&lt;p&gt;Matrix&lt;/p&gt;
+
+&lt;p&gt;VList&lt;/p&gt;
+
+&lt;p&gt;Function wrapper&lt;/p&gt;
+
+&lt;p&gt;String&lt;/p&gt;
+
+&lt;p&gt;Nstream&lt;/p&gt;
+
+&lt;p&gt;Snake&lt;/p&gt;
+
+&lt;p&gt;Mergesort&lt;/p&gt;
+
+&lt;p&gt;Next Permutation&lt;/p&gt;
+
+&lt;p&gt;Interval Heap&lt;/p&gt;
+
+&lt;p&gt;Linear-Time Selection&lt;/p&gt;
+
+&lt;p&gt;Union-Find&lt;/p&gt;
+
+&lt;p&gt;Radix Sort&lt;/p&gt;
+
+&lt;p&gt;Rational&lt;/p&gt;
+
+&lt;p&gt;DPLL&lt;/p&gt;
+
+&lt;p&gt;Smoothsort&lt;/p&gt;
+
+&lt;p&gt;Extendible Array&lt;/p&gt;
+
+&lt;p&gt;In-Place Merge&lt;/p&gt;
+
+&lt;p&gt;Random Shuffle&lt;/p&gt;
+
+&lt;p&gt;Random Sample&lt;/p&gt;
+
+&lt;p&gt;Natural Mergesort&lt;/p&gt;
+
+&lt;p&gt;Interpolation Search&lt;/p&gt;
+
+&lt;p&gt;Introsort&lt;/p&gt;
+
+&lt;p&gt;Hashed Array Tree&lt;/p&gt;
+
+&lt;p&gt;Recurrence Solver&lt;/p&gt;
+
+&lt;p&gt;Fibonacci Heap&lt;/p&gt;
+
+&lt;p&gt;Dijkstra&amp;#39;s Algorithm&lt;/p&gt;
+
+&lt;p&gt;Prim&amp;#39;s Algorithm&lt;/p&gt;
+
+&lt;p&gt;Kruskal&amp;#39;s Algorithm&lt;/p&gt;
+
+&lt;p&gt;Majority Element&lt;/p&gt;
+
+&lt;p&gt;Haar Transform&lt;/p&gt;
+
+&lt;p&gt;Argmax&lt;/p&gt;
+
+&lt;p&gt;Derivative&lt;/p&gt;
+
+&lt;p&gt;Skiplist&lt;/p&gt;
+
+&lt;p&gt;van Emde Boas Tree&lt;/p&gt;
+
+&lt;p&gt;Cuckoo HashMap&lt;/p&gt;
+
+&lt;p&gt;Needleman-Wunsch Algorithm&lt;/p&gt;
+
+&lt;p&gt;Treap&lt;/p&gt;
+
+&lt;p&gt;Floyd-Warshall Algorithm&lt;/p&gt;
+
+&lt;p&gt;Power Iteration&lt;/p&gt;
+
+&lt;p&gt;Edmonds&amp;#39;s Matching Algorithm&lt;/p&gt;
+
+&lt;p&gt;Kosaraju&amp;#39;s Algorithm&lt;/p&gt;
+
+&lt;p&gt;2-SAT&lt;/p&gt;
+
+&lt;p&gt;Bellman-Ford Algorithm&lt;/p&gt;
+
+&lt;p&gt;Graham Scan&lt;/p&gt;
+
+&lt;p&gt;Bipartite Testing&lt;/p&gt;
+
+&lt;p&gt;Johnson&amp;#39;s Algorithm&lt;/p&gt;
+
+&lt;p&gt;Strassen Algorithm&lt;/p&gt;
+
+&lt;p&gt;Cartesian Tree Sort&lt;/p&gt;
+
+&lt;p&gt;Ford-Fulkerson Algorithm&lt;/p&gt;
+
+&lt;p&gt;Scaling Ford-Fulkerson&lt;/p&gt;
+
+&lt;p&gt;Splay Tree&lt;/p&gt;
+
+&lt;p&gt;Ternary Search Tree&lt;/p&gt;
+
+&lt;p&gt;Ring Buffer&lt;/p&gt;
+
+&lt;p&gt;AVL Tree&lt;/p&gt;
+
+&lt;p&gt;Rabin-Karp Algorithm&lt;/p&gt;
+
+&lt;p&gt;RPN Evaluator&lt;/p&gt;
+
+&lt;p&gt;Shunting-Yard Algorithm&lt;/p&gt;
+
+&lt;p&gt;Skew Binomial Heap&lt;/p&gt;
+
+&lt;p&gt;2/3 Heap&lt;/p&gt;
+
+&lt;p&gt;Zeckendorf Logarithm&lt;/p&gt;
+
+&lt;p&gt;Factoradic Permutations&lt;/p&gt;
+
+&lt;p&gt;Binary Cyclic Subsets&lt;/p&gt;
+
+&lt;p&gt;Fibonacci Iterator&lt;/p&gt;
+
+&lt;p&gt;Fibonacci Search&lt;/p&gt;
+
+&lt;p&gt;Euclid&amp;#39;s Algorithm&lt;/p&gt;
+
+&lt;p&gt;Find Duplicate&lt;/p&gt;
+
+&lt;p&gt;Permutation Generator&lt;/p&gt;
+
+&lt;p&gt;Matrix Find&lt;/p&gt;
+
+&lt;p&gt;Binary GCD&lt;/p&gt;
+
+&lt;p&gt;Knuth-Morris-Pratt Algorithm&lt;/p&gt;
+
+&lt;p&gt;Kadane&amp;#39;s Algorithm&lt;/p&gt;
+
+&lt;p&gt;Karatsuba&amp;#39;s Algorithm&lt;/p&gt;
+
+&lt;p&gt;Min-Stack&lt;/p&gt;
+
+&lt;p&gt;Random Bag&lt;/p&gt;
+
+&lt;p&gt;Min-Queue&lt;/p&gt;
+
+&lt;p&gt;Lights-Out Solver&lt;/p&gt;
+
+&lt;p&gt;Maximum Single-Sell Profit&lt;/p&gt;
+
+&lt;p&gt;Generalized Kadane&amp;#39;s Algorithm&lt;/p&gt;
+
+&lt;p&gt;Longest Range&lt;/p&gt;
+
+&lt;p&gt;Egyptian Fractions&lt;/p&gt;
+
+&lt;p&gt;LL(1) Parser Generator&lt;/p&gt;
+
+&lt;p&gt;LR(0) Parser Generator&lt;/p&gt;
+
+&lt;p&gt;Word Ladders&lt;/p&gt;
+
+&lt;p&gt;Alias Method&lt;/p&gt;
+
+&lt;p&gt;Ternary Sierpinski Triangle&lt;/p&gt;
+
+&lt;p&gt;Bitonic Euclidean Traveling-salesman Problem&lt;/p&gt;
+
+&lt;p&gt;Binary Search Tree&lt;/p&gt;
+
+&lt;p&gt;Heapsort&lt;/p&gt;
+
+&lt;p&gt;Longest Common Subsequence&lt;/p&gt;
+
+&lt;p&gt;Levenshtein Distance(Edit Distance)&lt;/p&gt;
+
+&lt;p&gt;Longest Increasing Subsequence&lt;/p&gt;
+
+&lt;p&gt;Longest Palindromic Subsequence&lt;/p&gt;
+
+&lt;p&gt;Longest Simple Path(DAG)&lt;/p&gt;
+
+&lt;p&gt;Matrix-chain Multiplication&lt;/p&gt;
+
+&lt;p&gt;Quicksort&lt;/p&gt;
+
+&lt;p&gt;Topological Sort&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Java并行编程笔记3: 可见性重载</title>
+   <link href="http://highsp.cn/code/java/2014/03/21/java-concurrency-note3-visibility.html"/>
+   <updated>2014-03-21T00:00:00+08:00</updated>
+   <id>http://highsp.cn/code/java/2014/03/21/java-concurrency-note3-visibility</id>
+   <content type="html">&lt;ol&gt;
+&lt;li&gt;过期数据&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;我们在前面讨论JMM时便已提出“同步之道，外炼‘互斥’，内修‘可见’”的
+法门。过去，我不注意内存可见性的时候，程序里长满了小红疙瘩：&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-java&quot; data-lang=&quot;java&quot;&gt;&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;RedPimple&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;extends&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Thread&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;boolean&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;done&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    
+    &lt;span class=&quot;nd&quot;&gt;@Override&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;run&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;while&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(!&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;done&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;//A&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;Thread&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;yield&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;System&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;out&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;println&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;//D&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;done&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;done&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;setValue&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;){&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;value&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;static&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;[]&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;args&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;RedPimple&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;r&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;RedPimple&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;r&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;start&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;r&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;setValue&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;//B&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;r&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;done&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;//C&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;上面的代码有什么问题？即使运行它千百遍，你可能也察觉不出有什么问题。但
+是，问题确实存在。&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;病灶一：r线程理论上存在无限循环的可能（这里有两个线程，main线程和r线程）。
+因为没有任何同步的措施，main线程中C动作的效果何时对于r线程的A可见是不可知
+的。他肯能在done值已经被改之后的一段时间里仍然读到过期数据，最极端的情况，
+A一直读到的都是过期数据false。&lt;/li&gt;
+&lt;li&gt;病灶二：理论上可能打印出0。这就更匪夷所思了，main线程里不是有 B hb C么？没
+错，是有B hb C，但是不管是B还是C，都和A、D没有hb关系，理论上存在这样的执行
+序列C A D B， 它是合法的，C依旧可以宣称看到了B的效果。（这是从JMM理论上论
+证是允许的，实际情况取决于JMM掩盖之下的你的机器的MM）&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;这就是“过期数据”的隐患。尽管在这个例子里，问题好像还没那么严重，无非
+皮肤上出点小丘疹而已。但在实际的编程中，过期数据的危害是不容小视的。&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;锁的可见性&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;后来，我用了“锁牌香皂”，小红疙瘩真的就不见了！看这里看这里……&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-java&quot; data-lang=&quot;java&quot;&gt;&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;NoRedPimple&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;extends&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Thread&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;boolean&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;done&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;nd&quot;&gt;@Override&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;run&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;boolean&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(!&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kd&quot;&gt;synchronized&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;done&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;//A&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+                        &lt;span class=&quot;n&quot;&gt;Thread&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;yield&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+                &lt;span class=&quot;kd&quot;&gt;synchronized&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt; 
+                &lt;span class=&quot;n&quot;&gt;System&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;out&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;println&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;//D&lt;/span&gt;
+                &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;synchronized&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;done&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;done&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;synchronized&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;setValue&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;value&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;static&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;[]&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;args&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;NoRedPimple&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;r&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;NoRedPimple&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;r&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;start&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;r&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;setValue&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;//B&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;r&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;done&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;//C&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;正如这个例子所示，锁不仅仅有“互斥”的功能，而且还保证了内存可见性。运
+用我们在JMM里提到的理论，被标号的四个操作这次有了明确的HB关系，这下就不会
+有小红疙瘩了。&lt;/p&gt;
+
+&lt;p&gt;更进一步看锁的可见性：如果有两个线程t1，t2，t1有动作序列A B C U，其中
+U为放锁操作，t2有动作序列L D E F，L为加锁操作（同一锁），那么在执行中如果
+有U tb L，那么这两个线程的执行序列必为 A B C U L D E F，再无其他可能。这就
+保证了“在放锁前对t1可见的值，t2获得锁后同样可见”。&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Volatile&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;虽然上面用锁解决了过期数据的问题，但似乎有些大材小用了吧？代码不那么好
+看，治好了疹子，却留了一脸麻子。Java早已为消费者考虑到了这一点，volatile就
+是一种轻量级的同步，它可以保证“可见性”，但不保证“互斥”。&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-java&quot; data-lang=&quot;java&quot;&gt;&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;NoRedPimple&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;extends&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Thread&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;volatile&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;boolean&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;done&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;volatile&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;nd&quot;&gt;@Override&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;run&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(!&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;done&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;c1&quot;&gt;//A&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;Thread&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;yield&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;System&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;out&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;println&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;//D&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;done&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;done&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;setValue&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;value&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;static&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;[]&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;args&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;NoRedPimple&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;r&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;NoRedPimple&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;r&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;start&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;r&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;setValue&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;//B&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;r&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;done&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;//C&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;是不是简洁很多？结合JMM中对volatile读写的规定（SW第二条规则），上面的
+代码完全符合我们的要求，没有过期数据。那么，什么时候可以用volatile呢？必须
+同时满足以下三条：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;不依赖自己：写变量时并不依赖变量的当前值，或者：可以保证只有一个writer&lt;/li&gt;
+&lt;li&gt;不依赖别人：变量不与其他状态共同组成invariant。&lt;/li&gt;
+&lt;li&gt;访问变量时，没有其他原因需要加锁。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;只解释一下第一条，可能很多人对“不依赖自己的当前值”不太理解，举个简单
+的例子：count++， 这个就叫依赖当前值。为什么要有这样的限制？因为，volatile
+不保证count++是原子的，即我们所说的“互斥执行”，虽然我们过去的例子都把一
+条代码当作一个动作，但相信你知道，一条代码在CPU那里多半不会是一条指令，比
+如count++其实会分解为load-modify-store三个更小的动作，如果这样的操作有多个
+线程在做，是极易出错的。（鉴于这个问题过于经典，就此打住）。所以，第一条规
+则实际的意思就是“要么只有一个writer，怎么写随你便；要么可以多个writer，但
+不能是count++这种依赖当前值的写”。&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;原子变量&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Java 1.5 一声炮响，给我们送来了java.util.concurrency包，这个包并行功能
+强大，工具齐全，我们以后讨论会经常用到。原子变量也是此包提供的工具之一。顾
+名思义，原子变量，即支持“原子更新”，它更多地被用在“非阻塞算法”和“lock
+-free算法”中，其实我很想现在讨论非阻塞算法，两次面试都被考到，但抬头看看
+标题已经写了“可见性重访”，还是不跑题了，以后有机会再和大家讨论这个topic。&lt;/p&gt;
+
+&lt;p&gt;而除了“原子更新”的好处外，原子变量还提供了与volatile相同的内存语义，
+所以volatile所能保证的可见性，在原子变量这里同样可以。&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-java&quot; data-lang=&quot;java&quot;&gt;&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;java.util.concurrent.atomic.AtomicBoolean&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;java.util.concurrent.atomic.AtomicInteger&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;NoRedPimple&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;extends&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Thread&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;AtomicBoolean&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;done&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;AtomicBoolean&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;AtomicInteger&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;value&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;AtomicInteger&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+
+    &lt;span class=&quot;nd&quot;&gt;@Override&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;run&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(!&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;done&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;get&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;())&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;c1&quot;&gt;//A&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;Thread&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;yield&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;System&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;out&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;println&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;get&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;());&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;//D&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;done&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;done&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;set&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;setValue&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;set&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;static&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;[]&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;args&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;NoRedPimple&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;r&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;NoRedPimple&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;r&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;start&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;r&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;setValue&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;//B&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;r&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;done&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;//C&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;当然，我们这里使用原子变量，也是“大材小用”了的，原子变量的NB之处在于
+其原子性的CAS（compare-and-set）操作，由此可以完成volatile所不能的“check
+-and-act”动作，“可见性”只不过是其稍带脚支持的功能而已。我们以后再讨论他
+的CAS、由他构建的“非阻塞算法”以及“非阻塞算法”和用一般锁构建的“阻塞算
+法”的比较。&lt;/p&gt;
+
+&lt;p&gt;主要参考资料：&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;JLS 第三版&lt;/li&gt;
+&lt;li&gt;Java Concurrency in Practice &lt;/li&gt;
+&lt;/ol&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Java并行编程笔记2: Monitor</title>
+   <link href="http://highsp.cn/code/java/2014/03/14/java-concurrency-note2-monitor.html"/>
+   <updated>2014-03-14T00:00:00+08:00</updated>
+   <id>http://highsp.cn/code/java/2014/03/14/java-concurrency-note2-monitor</id>
+   <content type="html">&lt;h2&gt;1. 什么是Monitor？&lt;/h2&gt;
+
+&lt;p&gt;Monitor其实是一种同步工具，也可以说是一种同步机制，它通常被描述为一个
+对象，主要特点是：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;对象的所有方法都被“互斥”的执行。好比一个Monitor只有一个运行“许可”，任
+一个线程进入任何一个方法都需要获得这个“许可”，离开时把许可归还。&lt;/li&gt;
+&lt;li&gt;通常提供singal机制：允许正持有“许可”的线程暂时放弃“许可”，等待某个谓词
+成真（条件变量），而条件成立后，当前进程可以“通知”正在等待这个条件变量的
+线程，让他可以重新去获得运行许可。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Monitor对象可以被多线程安全地访问。关于“互斥”与“为什么要互斥”，我
+就不傻X兮兮解释了；而关于Monitor的singal机制，历史上曾经出现过两大门派，分
+别是Hoare派和Mesa派（上过海波老师OS课的SS同学应该对这个有印象），我还是用
+我的理解通俗地庸俗地解释一下：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Hoare派的singal机制江湖又称“Blocking condition variable”，特点是，当“发
+通知”的线程发出通知后，立即失去许可，并“亲手”交给等待者，等待者运行完毕
+后再将许可交还通知者。在这种机制里，等待者拿到许可后，谓词肯定为真——
+也就是说等待者不必再次检查条件成立与否，所以对条件的判断可以使用“if”，不
+必“while”&lt;/li&gt;
+&lt;li&gt;Mesa派的signal机制又称“Non-Blocking condition variable”， 与Hoare不同，
+通知者发出通知后，并不立即失去许可，而是把闻风前来等待者安排在ready queue
+里，等到schedule时有机会去拿到“许可”。这种机制里，等待者拿到许可后不能确
+定在这个时间差里是否有别的等待者进入过Monitor，因此不能保证谓词一定为真，
+所以对条件的判断必须使用“while”&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;这两种方案可以说各有利弊，但Mesa派在后来的盟主争夺中渐渐占了上风，被大
+多数实现所采用，有人给这种signal另外起了个别名叫“notify”，想必你也知道，
+Java采取的就是这个机制。&lt;/p&gt;
+
+&lt;h2&gt;2. Monitor与Java不得不说的故事&lt;/h2&gt;
+
+&lt;p&gt;子曰：“Java对象是天生的Monitor。”每一个Java对象都有成为Monitor的“潜
+质”。这是为什么？因为在Java的设计中，每一个对象自打娘胎里出来，就带了一把
+看不见的锁，通常我们叫“内部锁”，或者“Monitor锁”，或者“Intrinsic lock
+”。为了装逼起见，我们就叫它Intrinsic lock吧。有了这个锁的帮助，只要把类的
+所有对象方法都用synchronized关键字修饰，并且所有域都为私有（也就是只能通过
+方法访问对象状态），就是一个货真价实的Monitor了。比如，我们举一个大俗例吧：&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-java&quot; data-lang=&quot;java&quot;&gt;&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;Account&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;balance&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;Account&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;balance&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;balance&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;balance&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;synchronized&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;boolean&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;withdraw&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;){&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;balance&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;balance&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;synchronized&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;deposit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;){&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;balance&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+    
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h2&gt;3. synchronized关键字&lt;/h2&gt;
+
+&lt;p&gt;上面我们已经看到synchronized的一种用法，用来修饰方法，表示进入该方法需
+要对Intrinsic lock加锁，离开时放锁。synchronized可以用在程序块中，显示说明
+对“哪个对象的Intrinsic lock加锁”，比如&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-java&quot; data-lang=&quot;java&quot;&gt;&lt;span class=&quot;kd&quot;&gt;synchronized&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;deposit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;){&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;balance&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// 等价于&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;deposit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;){&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;synchronized&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;){&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;balance&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;这时，你可能就要问了，你不是说任何对象都有intrinsic lock么？而synchronized
+关键字又可以显示指定去锁谁，那我们是不是可以这样做：&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-java&quot; data-lang=&quot;java&quot;&gt;&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;Account&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;balance&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Object&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;lock&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;Object&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;Account&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;balance&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;balance&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;balance&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;boolean&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;withdraw&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;){&lt;/span&gt;
+        &lt;span class=&quot;kd&quot;&gt;synchronized&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lock&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;balance&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;balance&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;   
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;deposit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;){&lt;/span&gt;
+        &lt;span class=&quot;kd&quot;&gt;synchronized&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lock&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;balance&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;       
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;不用this的内部锁，而是用另外任意一个对象的内部锁来完成完全相同的任务？
+没错，完全可以。不过，需要注意的是，这时候，你实际上禁止了“客户代码加锁”
+的行为。前几天BBS上简哥有一贴提到的bug其实就是这个，这个时候使用这份代码的
+客户程序如果想当然地认为Account的同步是基于其内部锁的，并且傻X兮兮地写了类
+似下面的代码：&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-java&quot; data-lang=&quot;java&quot;&gt;&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;static&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;[]&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;args&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;Account&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;account&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;Account&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1000&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+        
+        &lt;span class=&quot;c1&quot;&gt;//some threads modifying account through Account’s methods...&lt;/span&gt;
+        
+        &lt;span class=&quot;kd&quot;&gt;synchronized&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;account&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;c1&quot;&gt;//blabla&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;自认为后面的同步快对account加了锁，期间的操作不会被其余通过Account方法操作
+account对象的线程所干扰，那就太悲剧了。因为他们并不相干，锁住了不同的锁。&lt;/p&gt;
+
+&lt;h2&gt;4. Java中的条件变量&lt;/h2&gt;
+
+&lt;p&gt;正如我们前面所说，Java采取了wait/notify机制来作为intrinsic lock 相关的
+条件变量，表示为等待某一条件成立的条件队列——说到这里顺带插一段，条件队列
+必然与某个锁相关，并且语义上关联某个谓词（条件队列、锁、条件谓词就是吉祥的
+一家）。所以，在使用wait/notify方法时，必然是已经获得相关锁了的，在进一步
+说，一个推论就是“wait/notify  方法只能出现在相应的同步块中”。如果不呢？
+就像下面一段（notify表示的谓词是“帐户里有钱啦～”）：&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-java&quot; data-lang=&quot;java&quot;&gt;&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;deposit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;){&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;balance&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;notify&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;//或者这样：&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;deposit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;){&lt;/span&gt;
+        &lt;span class=&quot;kd&quot;&gt;synchronized&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lock&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;balance&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;notify&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;这两段都是错的，第一段没有在同步块里，而第二段拿到的是lock的内部锁，调用的
+却是this.notify()，让人遗憾。运行时他们都会抛IllegalMonitorStateException
+异常——唉，想前一阵我参加一次笔试的时候，有一道题就是这个，让你选所给代码
+会抛什么异常，我当时就傻了，想这考得也太偏了吧，现在看看，确实是很基本的概
+念，当初被虐是压根没有理解wait/notify机制的缘故。那怎么写是对的呢？&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-java&quot; data-lang=&quot;java&quot;&gt;&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;deposit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;){&lt;/span&gt;
+        &lt;span class=&quot;kd&quot;&gt;synchronized&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lock&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;balance&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;lock&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;notify&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;//或者（取决于你采用的锁）：&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;synchronized&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;deposit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;){&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;balance&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;notify&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h2&gt;5.这就够了吗？&lt;/h2&gt;
+
+&lt;p&gt;看上去，Java的内部锁和wait/notify机制已经可以满足任何同步需求了，不是
+吗？em…可以这么说，但也可以说，不那么完美。有几个问题：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;锁不够用&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;有时候，我们的类里不止有一个状态，这些状态是相互独立的，如果只用同一个
+内部锁来维护他们全部，未免显得过于笨拙，会严重影响吞吐量。你马上会说，你刚
+才不是演示了用任意一个Object来做锁吗？我们多整几个Object分别加锁不就行了吗
+？没错，是可行的。但这样可能显得有些丑陋，而且Object来做锁本身就有语义不明
+确的缺点。&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;条件变量不够用&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Java用wait/notify机制实际上默认给一个内部锁绑定了一个条件队列，但是，
+有时候，针对一个状态（锁），我们的程序需要两个或以上的条件队列，比如，刚才
+的Account例子，如果某个2B银行有这样的规定“一个账户存款不得多于10000元”，
+这个时候，我们的存钱需要满足“余额+要存的数目不大于10000，否则等待，直到满
+足这个限制”，取钱需要满足“余额足够，否则等待，直到有钱为止”，这里需要两
+个条件队列，一个等待“存款不溢出”，一个等待“存款足够”，这时，一个默认的
+条件队列够用么？你可能又说，够用，我们可以模仿network里的“多路复用”，一
+个队列就能当多个来使，像这样：&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-java&quot; data-lang=&quot;java&quot;&gt;&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;Account&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;static&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;BOUND&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;10000&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;balance&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;Account&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;balance&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;balance&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;balance&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;synchronized&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;boolean&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;withdraw&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;InterruptedException&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;while&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;balance&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;wait&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;&lt;span class=&quot;c1&quot;&gt;// no money, wait&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;balance&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;notifyAll&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;&lt;span class=&quot;c1&quot;&gt;// not full, notify&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;synchronized&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;deposit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;InterruptedException&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;while&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;balance&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;BOUND&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;wait&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;&lt;span class=&quot;c1&quot;&gt;//full, wait&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;balance&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;amount&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;notifyAll&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;&lt;span class=&quot;c1&quot;&gt;// has money, notify&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;不是挺好吗？恩，没错，是可以。但是，仍然存在性能上的缺陷：每次都有多个
+线程被唤醒，而实际只有一个会运行，频繁的上下文切换和锁请求是件很废的事情。
+我们能不能不要notifyAll，而每次只用notify（只唤醒一个）呢？不好意思，想要
+“多路复用”，就必须notifyAll，否则会有丢失信号之虞（不解释了）。只有满足
+下面两个条件，才能使用notify：&lt;/p&gt;
+
+&lt;p&gt;一，只有一个条件谓词与条件队列相关，每个线程从wait返回执行相同的逻辑。&lt;/p&gt;
+
+&lt;p&gt;二，一进一出：一个对条件变量的通知，语义上至多只激活一个线程。&lt;/p&gt;
+
+&lt;p&gt;我又想插播一段：刚才写上面那段代码，IDE提示抛InterruptedException，我
+想提一下，这是因为wait是一个阻塞方法，几乎所有阻塞方法都会声明可能抛InterruptedException
+，这是和Java的interrupt机制有关的，以后我们有机会再说。&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;我不要死等&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;上面说的内部锁“低效”，是指当一个内部锁保护多个变量时而言的，如果
+用多个Object做锁，未必在效率上会有什么损失。其实，内部锁的更大的问题在于，
+一旦求锁失败，必须死等，不能被中断。所以，容易造成死锁，恢复机制脆弱。这就
+属于硬伤了。同样，我们以后有机会介绍替代方法。&lt;/p&gt;
+
+&lt;p&gt;既然这么做不优雅不高效不亚克西，那如之奈何？Java提供了其他工具吗？是的
+。这就是传说中的java.util.concurrency包里的故事，今天也不说了，有机会在和
+大家讨论。&lt;/p&gt;
+
+&lt;p&gt;主要参考资料：&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;&lt;p&gt;Wiki&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Addison Wesley, Java Concurrency in Practice ,Brian Goetz&lt;/p&gt;&lt;/li&gt;
+&lt;/ol&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Java并行编程笔记1: JMM</title>
+   <link href="http://highsp.cn/code/java/2014/03/07/java-concurrency-note1-jmm.html"/>
+   <updated>2014-03-07T00:00:00+08:00</updated>
+   <id>http://highsp.cn/code/java/2014/03/07/java-concurrency-note1-jmm</id>
+   <content type="html">&lt;h2&gt;1.什么是JMM？&lt;/h2&gt;
+
+&lt;p&gt;JMM即Java Memory Model，设想有这样一条赋值语句： a = 1;而a为诸多线
+程所共享， JMM所关注的问题就是：“读取a的线程在何时会看到值为1的这个写入？”&lt;/p&gt;
+
+&lt;h2&gt;2. 为什么关注JMM？&lt;/h2&gt;
+
+&lt;p&gt;在多数情况下，即使是并发程序的程序员，也并不特别关心JMM，因为Java语言
+与JVM用更高抽象的“同步”语义隐藏了JMM的语义，使得程序员即便对JMM一无所知
+，也可以写出优雅的并发程序。许多介绍Java同步机制的资料也并不对JMM做过多的
+介绍。那么你可能会问，“那一上来就讨论JMM有毛用啊？”相信我，是有毛用的。
+虽然我对Java并不是十分精通，Java下的并发编程更是新上手的菜鸟，但近一段时间
+的学习经验告诉我，所谓同步，无非关注于两点，一是互斥性，二是可见性。结合自
+己过去的认识，对并发的理解过多侧重于“互斥性”，而对“可见性”一知半解，影
+响了对同步更精细的理解。JMM则对此有十分清晰的阐述。&lt;/p&gt;
+
+&lt;h2&gt;3.JMM从何而来？&lt;/h2&gt;
+
+&lt;p&gt;这就要从盘古开天辟地开始说起了……话说冯诺依曼童鞋当年提出经典的体系结
+构时，打死他想不到现代的计算机体系结构会发展到这个鸟样子。冯诺依曼模型是一
+个顺序化的计算模型，可见性不是什么问题，而今天的多处理器架构已经很少再使用
+顺序一致化模型，而且处理器和编译器的一些优化都会对内存的可见性产生影响：&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;&lt;p&gt;处理器乱序执行&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;存储在处理器本地的缓存，对其他处理器不可见&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;作为优化，编译器可能把变量存在寄存器而非内存&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;聪明的编译器可能改变生成指令的顺序&lt;/p&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;更棘手的是，江湖之大，各门各派对这些行为并没有达成统一的共识，不同架构
+的处理器提供了不同级别的cache coherence，而所谓一种架构的Memroy Model，即
+是说在该架构中，Memory的行为对应用程序做出怎样的担保。而不同架构中memory 
+barrier这样特殊的指令，正是为了获得memory协调性而引入的。而JMM则隐藏了这些
+不同架构MM的差异性，千秋万载一统江湖斯密达。&lt;/p&gt;
+
+&lt;h2&gt;4. Happens-before关系&lt;/h2&gt;
+
+&lt;p&gt;在介绍JMM之前，我们先来了解一些比较重要的概念：&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;&lt;p&gt;如果我们把程序看成一个“动作”的集合U，在一个程序的一次执行中，所有这些
+动作都会在时间上（注意是时间上）有一个次序关系，我们记做“tb”(time-before
+)关系，显然tb是一个“全序关系”（反对称，传递，并且任意两个动作可比）&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;在这个“动作”集合中，有一些动作被称作“同步动作”，包括上锁/解锁，读写
+volitile变量，线程开始/结束等。在这个同步动作子集S上，有一个全序“sw”（synchronize
+-with）关系。详细的SW定义：&lt;/p&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;ul&gt;
+&lt;li&gt;对同一个锁，有上锁动作A，解锁动作B，如果B tb A， 则B sw A &lt;/li&gt;
+&lt;li&gt;对同一个volatile变量，有写动作A，读动作B，如果B tb A，则B sw A &lt;/li&gt;
+&lt;li&gt;对于一个线程，start动作记做A，B为任一该线程中的动作，则A sw B &lt;/li&gt;
+&lt;li&gt;对于一个线程，检测到线程终结的动作记做A（包括join返回，isAlive返回false等
+），B为任一该线程中的动作，则B sw A &lt;/li&gt;
+&lt;li&gt;线程t1调用线程t2的interrupt动作记做A，t2检测到中断（抛出InterruptedException
+，或者检测到interrupt状态更改）记做B，则 A sw B &lt;/li&gt;
+&lt;li&gt;对一个变量默认值赋值（0，false，null）动作记做A，对它的任意操作记做B，则A
+sw B &lt;/li&gt;
+&lt;li&gt;一个对象的构造函数结束动作记做A，该对象的finalizer开始记做B，则A sw B&lt;/li&gt;
+&lt;li&gt;SW一致性含义：在全序SW中，任一个读操作读到的值是在它之前最后一个写操作写入
+的值。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;ol&gt;
+&lt;li&gt;在动作集合U上，有一个偏序（自反，反对称，传递，但不是任意两个元素可比）
+“hb”(happens-before)关系，而他和sw关系有着千丝万缕的关系：那就是如果把sw
+关系从S集合拿到他的超集U中，求传递闭包，再加上“intra thread原则”——单一
+线程中，如果动作B在程序中出现在动作A之后，那么A hb B（这很好理解，相当于顺
+序模型运用在了每个线程内部）。&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;即有：  HB = t(SW) + IntraThread.&lt;/p&gt;
+
+&lt;p&gt;OK，现在我们已经对HB关系做出了定义。之所以要把它用离散数学的语言写出来
+，不单单是为了装逼，而是我深感在一些概念性的解释中，数学语言的描述是最简洁
+、歧义最小、最易于理解的。&lt;/p&gt;
+
+&lt;p&gt;HB一致性的含义：对于一个变量，有读操作R，写操作W，如果不存在R hb W，并且也
+不存在另一个写操作W’，使得W hb W‘，并且W’ hb R，那么，W所写的值对于R来
+说，是“可能”看见的。（这好像法律条文——凡是没有禁止的，都是可能做的）&lt;/p&gt;
+
+&lt;p&gt;注意1：这里需要提出的一点是，HB关系和TB关系是没有必然联系的，也就是，如果
+A hb B， A不一定tb B， 反过来也一样， 如果A tb B， 不一定就有 A hb B， 这
+是通常容易混淆的。&lt;/p&gt;
+
+&lt;p&gt;注意2：从我们的定义中就可以发现，tb、sw的某些规则（前两条）、hb的某些规则
+（从sw前两条演化而来的）都是依赖于某次特定的执行（execution）的，在这些情景下，
+脱离了这个前提，单纯的提A hb B还是C sw D都是没有意义的。&lt;/p&gt;
+
+&lt;h2&gt;5. JMM现身&lt;/h2&gt;
+
+&lt;p&gt;做了这么多铺垫，主角到现在还没有出现，作为导演鸭梨很大。前面已经介绍了
+HB关系模型，您可能认为这就是JMM了，其实是有微小差别的——JMM是一种更严格的
+HB模型。严格在哪里呢？JSR133中有一大段形式化描述，看得犯晕，即使我个人再喜
+欢装逼也万难再描述一遍，我用我的理解来做出简单的解释，请大牛们检查。我们看
+一个例子：&lt;/p&gt;
+
+&lt;p&gt;初始条件：x = y = 0&lt;/p&gt;
+
+&lt;p&gt;Thread 1:&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-java&quot; data-lang=&quot;java&quot;&gt;&lt;span class=&quot;n&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;//A&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;//B&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;y&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;//C&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Thread 2:&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-java&quot; data-lang=&quot;java&quot;&gt;&lt;span class=&quot;n&quot;&gt;b&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;//D&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;b&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;//E&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;//F&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;看上去有点paradox的意思，你可能认为最终a = 0， b = 0是唯一的结果。但是，在
+HB模型中，不是这样的。让我们来看上面这个例子：我们没有对两个线程做任何同步
+，对于x，y的读写都是可能存在data race的。&lt;/p&gt;
+
+&lt;p&gt;插播一条data race的定义：对同一变量的两个操作A、B，如果至少有一个写操作，
+并且A、B不存在HB关系，则我们说两操作存在data race。&lt;/p&gt;
+
+&lt;p&gt;这里，我们把六个操作分别编号（其实6个操作可以再细分为很多个小操作，但
+这里不需要），我们从HB的定义中可知，同一线程中，A hb B，B hb C，D hb E， 
+E hb F，但是，这个例子中，F和A并没有HB关系，根据HB一致性原则，那么A可以读
+到F的写入；同理，D可以读到C的写入——这是违背直觉的，但我们并没有违反HB的
+法律。所以在HB模型中，这是被允许的。&lt;/p&gt;
+
+&lt;p&gt;在JMM中，上述情景是被禁止的。而JMM是通过什么新的条文做到这一点的？我的
+理解是，只用了下面一条规则：&lt;/p&gt;
+
+&lt;p&gt;JMM附加规则：如果某一动作的发生与否不取决于任何data race的发生与否，那么，
+这个动作是可以被early committed的。&lt;/p&gt;
+
+&lt;p&gt;带着这条规则，我们再来看上述例子，显然，这样一来，F不能在A之前commit，
+因为他依赖于对y读写data race的发生，y反过来依赖x，绕回来了，总之
+，如果不发生竞争写入，则F不可能发生。如此一来，上述情景被禁止了。为了更好
+理解，我们再来看一个例子：&lt;/p&gt;
+
+&lt;p&gt;初始条件：x = y = 0&lt;/p&gt;
+
+&lt;p&gt;Thread 1:&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-java&quot; data-lang=&quot;java&quot;&gt;&lt;span class=&quot;n&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;//A&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;y&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;//B&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Thread 2:&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-java&quot; data-lang=&quot;java&quot;&gt;&lt;span class=&quot;n&quot;&gt;b&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;//C&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;//D&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;看上去跟刚才那个例子差不多，但如果我告诉你在这个例子中，a = 1， b =1 就是
+可以被JMM接受的，你会不会感到惊讶？让我们再来检查我们的规则：同样，D和A没
+有HB关系，B和C没有HB关系，而且，对于附加规则，B、D动作的发生不依赖与任何data
+ race， 即是说，有没有data race，我都可以发生，那么，所有限制性规则再次全
+军覆没，a = 1， b = 1 可以接受。&lt;/p&gt;
+
+&lt;p&gt;最后一个例子：&lt;/p&gt;
+
+&lt;p&gt;初始条件：x = y = 0&lt;/p&gt;
+
+&lt;p&gt;Thread 1:&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-java&quot; data-lang=&quot;java&quot;&gt;&lt;span class=&quot;n&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;//A&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;b&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;//B&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;y&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;//C&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Thread 2:  &lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-java&quot; data-lang=&quot;java&quot;&gt;&lt;span class=&quot;n&quot;&gt;c&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;//D&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;//E&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;这个例子就没有刚才那么直观了，现在的问题是a = b = c = 1是JMM可以接受的结果
+吗？直觉上说，你可能脱口而出，不可能，因为违反了附加规则：操作B依赖于x的data
+ race，x反过来又依赖y……B不能提前commit。你很聪明，但是，遗憾的是
+，编译器比你还聪明。我们看，在B执行的时候，a的取值可能有哪些？没错，无非是
+0或者1，那么，作为一个比你还聪明的编译器，看出“B操作的本质无非是b = 1，这
+个操作不依赖于data race发生与否”这一事实，应该是情理之中吧。那么它就会做
+出优化，把上述代码变为：&lt;/p&gt;
+
+&lt;p&gt;Thread 1:&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-java&quot; data-lang=&quot;java&quot;&gt;&lt;span class=&quot;n&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;//A&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;b&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;//B&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;y&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;//C&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Thread 2:  &lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-java&quot; data-lang=&quot;java&quot;&gt;&lt;span class=&quot;n&quot;&gt;c&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;//D&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;//E&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;现在，你还说他违反附加原则吗？这个情景是被JMM接受的。&lt;/p&gt;
+
+&lt;p&gt;上述是我对JMM一点皮毛的理解，主要参考资料：&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;&lt;p&gt;JSR133&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Addison Wesley, Java Concurrency in Practice ,Brian Goetz&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;各路网文&lt;/p&gt;&lt;/li&gt;
+&lt;/ol&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>如何加密公开github</title>
+   <link href="http://highsp.cn/code/algorithm/2014/02/01/how-to-encrypt-github.html"/>
+   <updated>2014-02-01T00:00:00+08:00</updated>
+   <id>http://highsp.cn/code/algorithm/2014/02/01/how-to-encrypt-github</id>
+   <content type="html">&lt;h2&gt;安装&lt;/h2&gt;
+
+&lt;p&gt;&lt;strong&gt;For Linux&lt;/strong&gt;&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;$git clone https://github.com/hilr/git-encrypt.git
+$cd git-encrypt 
+$chmod 755 gitcrypt
+$sudo ln -s &amp;quot;$(pwd)/gitcrypt&amp;quot; /usr/local/bin/gitcrypt
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;For Windows&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;TODO&lt;/p&gt;
+
+&lt;h2&gt;创建一个Git源.&lt;/h2&gt;
+
+&lt;p&gt;&lt;strong&gt;1.&lt;/strong&gt; 创建一个没有初始化的git源.
+&lt;strong&gt;2.&lt;/strong&gt; 执行以下命令:&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;$mkdir repo
+$cd repo
+$git init 
+$gitcrypt init 
+$touch README
+$git add README 
+$git commit -m &amp;quot;first commit&amp;quot; 
+$git remote add origin https://github.com/hilr/repo.git
+$git push origin master
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;3.&lt;/strong&gt; 备份repo/.git/config，此文件用于解密 &lt;/p&gt;
+
+&lt;h2&gt;本地克隆git源&lt;/h2&gt;
+
+&lt;p&gt;&lt;strong&gt;1.&lt;/strong&gt; 使用共享的config文件替换本地的文件。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;2.&lt;/strong&gt; 执行以下命令来解密： &lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;$git clone -n https://github.com/hilr/repo.git
+cp config_backup repo/.git/config
+cd repo 
+git reset --hard HEAD
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;完成&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>如何加密公开github</title>
+   <link href="http://highsp.cn/algorithm/2014/02/01/how-to-encrypt-github.html"/>
+   <updated>2014-02-01T00:00:00+08:00</updated>
+   <id>http://highsp.cn/algorithm/2014/02/01/how-to-encrypt-github</id>
+   <content type="html">&lt;h2&gt;安装&lt;/h2&gt;
+
+&lt;p&gt;&lt;strong&gt;For Linux&lt;/strong&gt;&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;$git clone https://github.com/hilr/git-encrypt.git
+$cd git-encrypt 
+$chmod 755 gitcrypt
+$sudo ln -s &amp;quot;$(pwd)/gitcrypt&amp;quot; /usr/local/bin/gitcrypt
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;For Windows&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;TODO&lt;/p&gt;
+
+&lt;h2&gt;创建一个Git源.&lt;/h2&gt;
+
+&lt;p&gt;&lt;strong&gt;1.&lt;/strong&gt; 创建一个没有初始化的git源.
+&lt;strong&gt;2.&lt;/strong&gt; 执行以下命令:&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;$mkdir repo
+$cd repo
+$git init 
+$gitcrypt init 
+$touch README
+$git add README 
+$git commit -m &amp;quot;first commit&amp;quot; 
+$git remote add origin https://github.com/hilr/repo.git
+$git push origin master
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;strong&gt;3.&lt;/strong&gt; 备份repo/.git/config，此文件用于解密 &lt;/p&gt;
+
+&lt;h2&gt;本地克隆git源&lt;/h2&gt;
+
+&lt;p&gt;&lt;strong&gt;1.&lt;/strong&gt; 使用共享的config文件替换本地的文件。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;2.&lt;/strong&gt; 执行以下命令来解密： &lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;$git clone -n https://github.com/hilr/repo.git
+cp config_backup repo/.git/config
+cd repo 
+git reset --hard HEAD
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;完成&lt;/p&gt;
+</content>
+ </entry>
+ 
+ 
+</feed>

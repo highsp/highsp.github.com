@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="zh">
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		
+		<meta name="description" content="Java并行编程笔记3: 可见性重载">
+		
+		<meta name="author" content="">
+		
+		<meta name="keywords" content="JMM,Java内存模型,并行编程">
+		
+		<link rel="shortcut icon" href="/assets/images//favicon.ico">
+
+		
+			
+		
+		
+
+
+		<title>Java并行编程笔记3: 可见性重载</title>
+
+		<link rel='alternate' type="application/rss+xml" title="RSS 2.0 - Articiles" href="http://highsp.cn/rss.xml">
+		<link rel='alternate' type="application/atom+xml" title="Atom - Articiles" href="http://highsp.cn/atom.xml">
+		<!-- Bootstrap core CSS -->
+		<link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+		<link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap-theme.min.css" rel="stylesheet">
+
+		<!-- Custom styles for this template -->
+		<link href="/assets/css//main.css" rel="stylesheet">
+
+		<!-- Just for debugging purposes. Don't actually copy this line! -->
+		<!--[if lt IE 9]><script src="/assets/js//ie8-responsive-file-warning.js"></script><![endif]-->
+
+		<!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+		<!--[if lt IE 9]>
+		<script src="//oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+		<script src="//oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+		<![endif]-->
+		
+	</head>
+
+	<body>
+		<!-- Navigation bar -->
+		<div class="navbar blue-bg navbar-fixed-top" role="navigation">
+			<div class="container">
+				<div class="navbar-header">
+					<button type="button" class="navbar-toggle label-primary" data-toggle="collapse" data-target=".navbar-collapse">
+						<span class="sr-only">Toggle navigation</span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+					</button>
+
+					
+					
+
+
+					<a class="navbar-brand" href="/#">带码的世界</a>
+				</div>
+				<div class="navbar-collapse collapse">
+					<ul class="nav navbar-nav">
+						
+						<li><a href="/">首页</a></li>
+						
+
+						
+
+						
+							
+								
+							
+
+							
+								
+								
+
+
+								<li class=""><a href="/algorithm">算法理论 <span class="badge">6</span></a></li>
+							
+						
+							
+								
+							
+
+							
+								
+									
+									
+
+
+									<li class="dropdown active">
+									<a href="#" class="dropdown-toggle" data-toggle="dropdown">带码的世界 <span class="badge">11</span><b class="caret"></b></a>
+									<ul class="dropdown-menu">
+										
+										
+											
+												
+												
+
+
+
+												
+												
+												
+
+
+												<li><a href="/code/java">java <span class="badge">8</span></a></li>
+												
+											
+										
+											
+											
+										
+											
+											
+										
+											
+											
+										
+											
+											
+										
+											
+												
+												
+
+
+
+												
+												
+												
+
+
+												<li><a href="/code/algorithm">算法理论 <span class="badge">6</span></a></li>
+												
+											
+										
+											
+											
+										
+											
+											
+										
+											
+											
+										
+											
+											
+										
+											
+											
+										
+									</ul>
+									</li>
+								
+							
+						
+							
+								
+							
+
+							
+								
+							
+						
+							
+								
+							
+
+							
+								
+								
+
+
+								<li class=""><a href="/internet">互联网 <span class="badge">1</span></a></li>
+							
+						
+							
+								
+							
+
+							
+								
+								
+
+
+								<li class=""><a href="/scalability">可扩展性 <span class="badge">2</span></a></li>
+							
+						
+					</ul>
+					
+	
+			
+ 			<form class="navbar-form navbar-right" role="form" action="https://www.google.com.hk/search" target="_blank">
+	<div class="form-group">
+	<input type="text" class="form-control" placeholder="关键字" name="query" autocomplete="off">
+	<input type="hidden" value="" name="as_sitesearch"> 
+	</div>
+	<button class="btn btn-default" type="submit">搜索</button>
+</form>
+
+	
+
+
+					
+				</div><!--/.navbar-collapse -->
+			</div>
+		</div>
+
+		<!-- main page -->
+		<div class="container main-page">
+			<div class="row">
+				<div class="col-sm-8">
+					<h1 class="page-header">Java并行编程笔记3: 可见性重载
+	<br>
+	
+	
+	<span class="label label-info font-h6">
+	<date class="date-pub" title="2014-03-21T00:00:00+08:00" datetime="2014-03-21T00:00:00+08:00" pubdate>
+	<span class="month"><abbr>March</abbr></span>
+	<span class="day">21</span>
+	<span class="year">2014</span>
+	</date>
+	
+</span>
+
+</h1>
+<div class="lead">
+<ol>
+<li>过期数据</li>
+</ol>
+
+<p>我们在前面讨论JMM时便已提出“同步之道，外炼‘互斥’，内修‘可见’”的
+法门。过去，我不注意内存可见性的时候，程序里长满了小红疙瘩：</p>
+
+<div class="highlight"><pre><code class="language-java" data-lang="java"><span class="kd">public</span> <span class="kd">class</span> <span class="nc">RedPimple</span> <span class="kd">extends</span> <span class="n">Thread</span><span class="o">{</span>
+    <span class="kd">private</span> <span class="kt">boolean</span> <span class="n">done</span><span class="o">;</span>
+    <span class="kd">private</span> <span class="kt">int</span> <span class="n">value</span><span class="o">;</span>
+    
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+        <span class="k">while</span><span class="o">(!</span><span class="n">done</span><span class="o">)</span> <span class="c1">//A</span>
+            <span class="n">Thread</span><span class="o">.</span><span class="na">yield</span><span class="o">();</span>
+        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">value</span><span class="o">);</span> <span class="c1">//D</span>
+    <span class="o">}</span>
+    
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">done</span><span class="o">()</span> <span class="o">{</span>
+        <span class="n">done</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+    <span class="o">}</span>
+    
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setValue</span><span class="o">(</span><span class="kt">int</span> <span class="n">value</span><span class="o">){</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">;</span>
+    <span class="o">}</span>
+    
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">RedPimple</span> <span class="n">r</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">RedPimple</span><span class="o">();</span>
+        <span class="n">r</span><span class="o">.</span><span class="na">start</span><span class="o">();</span>
+        <span class="n">r</span><span class="o">.</span><span class="na">setValue</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span> <span class="c1">//B</span>
+        <span class="n">r</span><span class="o">.</span><span class="na">done</span><span class="o">();</span> <span class="c1">//C</span>
+    <span class="o">}</span>
+<span class="o">}</span></code></pre></div>
+
+<p>上面的代码有什么问题？即使运行它千百遍，你可能也察觉不出有什么问题。但
+是，问题确实存在。</p>
+
+<ul>
+<li>病灶一：r线程理论上存在无限循环的可能（这里有两个线程，main线程和r线程）。
+因为没有任何同步的措施，main线程中C动作的效果何时对于r线程的A可见是不可知
+的。他肯能在done值已经被改之后的一段时间里仍然读到过期数据，最极端的情况，
+A一直读到的都是过期数据false。</li>
+<li>病灶二：理论上可能打印出0。这就更匪夷所思了，main线程里不是有 B hb C么？没
+错，是有B hb C，但是不管是B还是C，都和A、D没有hb关系，理论上存在这样的执行
+序列C A D B， 它是合法的，C依旧可以宣称看到了B的效果。（这是从JMM理论上论
+证是允许的，实际情况取决于JMM掩盖之下的你的机器的MM）</li>
+</ul>
+
+<p>这就是“过期数据”的隐患。尽管在这个例子里，问题好像还没那么严重，无非
+皮肤上出点小丘疹而已。但在实际的编程中，过期数据的危害是不容小视的。</p>
+
+<ol>
+<li>锁的可见性</li>
+</ol>
+
+<p>后来，我用了“锁牌香皂”，小红疙瘩真的就不见了！看这里看这里……</p>
+
+<div class="highlight"><pre><code class="language-java" data-lang="java"><span class="kd">public</span> <span class="kd">class</span> <span class="nc">NoRedPimple</span> <span class="kd">extends</span> <span class="n">Thread</span> <span class="o">{</span>
+    <span class="kd">private</span> <span class="kt">boolean</span> <span class="n">done</span><span class="o">;</span>
+    <span class="kd">private</span> <span class="kt">int</span> <span class="n">value</span><span class="o">;</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+        <span class="kt">boolean</span> <span class="n">tmp</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+        <span class="k">while</span> <span class="o">(!</span><span class="n">tmp</span><span class="o">)</span> <span class="o">{</span>
+            <span class="kd">synchronized</span> <span class="o">(</span><span class="k">this</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">tmp</span> <span class="o">=</span> <span class="n">done</span><span class="o">;</span> <span class="c1">//A</span>
+            <span class="o">}</span>
+                        <span class="n">Thread</span><span class="o">.</span><span class="na">yield</span><span class="o">();</span>
+        <span class="o">}</span>
+                <span class="kd">synchronized</span> <span class="o">(</span><span class="k">this</span><span class="o">)</span> <span class="o">{</span> 
+                <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">value</span><span class="o">);</span>  <span class="c1">//D</span>
+                <span class="o">}</span>
+    <span class="o">}</span>
+
+    <span class="kd">synchronized</span> <span class="kd">public</span> <span class="kt">void</span> <span class="nf">done</span><span class="o">()</span> <span class="o">{</span>
+        <span class="n">done</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="kd">synchronized</span> <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setValue</span><span class="o">(</span><span class="kt">int</span> <span class="n">value</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">NoRedPimple</span> <span class="n">r</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">NoRedPimple</span><span class="o">();</span>
+        <span class="n">r</span><span class="o">.</span><span class="na">start</span><span class="o">();</span>
+        <span class="n">r</span><span class="o">.</span><span class="na">setValue</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span> <span class="c1">//B</span>
+        <span class="n">r</span><span class="o">.</span><span class="na">done</span><span class="o">();</span> <span class="c1">//C</span>
+    <span class="o">}</span>
+<span class="o">}</span></code></pre></div>
+
+<p>正如这个例子所示，锁不仅仅有“互斥”的功能，而且还保证了内存可见性。运
+用我们在JMM里提到的理论，被标号的四个操作这次有了明确的HB关系，这下就不会
+有小红疙瘩了。</p>
+
+<p>更进一步看锁的可见性：如果有两个线程t1，t2，t1有动作序列A B C U，其中
+U为放锁操作，t2有动作序列L D E F，L为加锁操作（同一锁），那么在执行中如果
+有U tb L，那么这两个线程的执行序列必为 A B C U L D E F，再无其他可能。这就
+保证了“在放锁前对t1可见的值，t2获得锁后同样可见”。</p>
+
+<ol>
+<li>Volatile</li>
+</ol>
+
+<p>虽然上面用锁解决了过期数据的问题，但似乎有些大材小用了吧？代码不那么好
+看，治好了疹子，却留了一脸麻子。Java早已为消费者考虑到了这一点，volatile就
+是一种轻量级的同步，它可以保证“可见性”，但不保证“互斥”。</p>
+
+<div class="highlight"><pre><code class="language-java" data-lang="java"><span class="kd">public</span> <span class="kd">class</span> <span class="nc">NoRedPimple</span> <span class="kd">extends</span> <span class="n">Thread</span> <span class="o">{</span>
+    <span class="kd">private</span> <span class="kd">volatile</span> <span class="kt">boolean</span> <span class="n">done</span><span class="o">;</span>
+    <span class="kd">private</span> <span class="kd">volatile</span> <span class="kt">int</span> <span class="n">value</span><span class="o">;</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+        <span class="k">while</span> <span class="o">(!</span><span class="n">done</span><span class="o">)</span> <span class="o">{</span><span class="c1">//A</span>
+            <span class="n">Thread</span><span class="o">.</span><span class="na">yield</span><span class="o">();</span>
+        <span class="o">}</span>
+        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">value</span><span class="o">);</span> <span class="c1">//D</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">done</span><span class="o">()</span> <span class="o">{</span>
+        <span class="n">done</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setValue</span><span class="o">(</span><span class="kt">int</span> <span class="n">value</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">NoRedPimple</span> <span class="n">r</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">NoRedPimple</span><span class="o">();</span>
+        <span class="n">r</span><span class="o">.</span><span class="na">start</span><span class="o">();</span>
+        <span class="n">r</span><span class="o">.</span><span class="na">setValue</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span> <span class="c1">//B</span>
+        <span class="n">r</span><span class="o">.</span><span class="na">done</span><span class="o">();</span> <span class="c1">//C</span>
+    <span class="o">}</span>
+<span class="o">}</span></code></pre></div>
+
+<p>是不是简洁很多？结合JMM中对volatile读写的规定（SW第二条规则），上面的
+代码完全符合我们的要求，没有过期数据。那么，什么时候可以用volatile呢？必须
+同时满足以下三条：</p>
+
+<ul>
+<li>不依赖自己：写变量时并不依赖变量的当前值，或者：可以保证只有一个writer</li>
+<li>不依赖别人：变量不与其他状态共同组成invariant。</li>
+<li>访问变量时，没有其他原因需要加锁。</li>
+</ul>
+
+<p>只解释一下第一条，可能很多人对“不依赖自己的当前值”不太理解，举个简单
+的例子：count++， 这个就叫依赖当前值。为什么要有这样的限制？因为，volatile
+不保证count++是原子的，即我们所说的“互斥执行”，虽然我们过去的例子都把一
+条代码当作一个动作，但相信你知道，一条代码在CPU那里多半不会是一条指令，比
+如count++其实会分解为load-modify-store三个更小的动作，如果这样的操作有多个
+线程在做，是极易出错的。（鉴于这个问题过于经典，就此打住）。所以，第一条规
+则实际的意思就是“要么只有一个writer，怎么写随你便；要么可以多个writer，但
+不能是count++这种依赖当前值的写”。</p>
+
+<ol>
+<li>原子变量</li>
+</ol>
+
+<p>Java 1.5 一声炮响，给我们送来了java.util.concurrency包，这个包并行功能
+强大，工具齐全，我们以后讨论会经常用到。原子变量也是此包提供的工具之一。顾
+名思义，原子变量，即支持“原子更新”，它更多地被用在“非阻塞算法”和“lock
+-free算法”中，其实我很想现在讨论非阻塞算法，两次面试都被考到，但抬头看看
+标题已经写了“可见性重访”，还是不跑题了，以后有机会再和大家讨论这个topic。</p>
+
+<p>而除了“原子更新”的好处外，原子变量还提供了与volatile相同的内存语义，
+所以volatile所能保证的可见性，在原子变量这里同样可以。</p>
+
+<div class="highlight"><pre><code class="language-java" data-lang="java"><span class="kn">import</span> <span class="nn">java.util.concurrent.atomic.AtomicBoolean</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.util.concurrent.atomic.AtomicInteger</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">NoRedPimple</span> <span class="kd">extends</span> <span class="n">Thread</span> <span class="o">{</span>
+    <span class="kd">private</span> <span class="n">AtomicBoolean</span> <span class="n">done</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">AtomicBoolean</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span>
+    <span class="kd">private</span> <span class="n">AtomicInteger</span> <span class="n">value</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">AtomicInteger</span><span class="o">(</span><span class="mi">0</span><span class="o">);</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+        <span class="k">while</span> <span class="o">(!</span><span class="n">done</span><span class="o">.</span><span class="na">get</span><span class="o">())</span> <span class="o">{</span><span class="c1">//A</span>
+            <span class="n">Thread</span><span class="o">.</span><span class="na">yield</span><span class="o">();</span>
+        <span class="o">}</span>
+        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">value</span><span class="o">.</span><span class="na">get</span><span class="o">());</span> <span class="c1">//D</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">done</span><span class="o">()</span> <span class="o">{</span>
+        <span class="n">done</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setValue</span><span class="o">(</span><span class="kt">int</span> <span class="n">value</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">value</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">value</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">NoRedPimple</span> <span class="n">r</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">NoRedPimple</span><span class="o">();</span>
+        <span class="n">r</span><span class="o">.</span><span class="na">start</span><span class="o">();</span>
+        <span class="n">r</span><span class="o">.</span><span class="na">setValue</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span> <span class="c1">//B</span>
+        <span class="n">r</span><span class="o">.</span><span class="na">done</span><span class="o">();</span> <span class="c1">//C</span>
+    <span class="o">}</span>
+<span class="o">}</span></code></pre></div>
+
+<p>当然，我们这里使用原子变量，也是“大材小用”了的，原子变量的NB之处在于
+其原子性的CAS（compare-and-set）操作，由此可以完成volatile所不能的“check
+-and-act”动作，“可见性”只不过是其稍带脚支持的功能而已。我们以后再讨论他
+的CAS、由他构建的“非阻塞算法”以及“非阻塞算法”和用一般锁构建的“阻塞算
+法”的比较。</p>
+
+<p>主要参考资料：</p>
+
+<ol>
+<li>JLS 第三版</li>
+<li>Java Concurrency in Practice </li>
+</ol>
+
+</div>
+
+
+<div class="row">
+	<div class="col-md-6">
+		
+<div>
+	<span>标签:</span>
+	
+	<span class="label label-default">Java</span>
+	
+	<span class="label label-primary">并行编程</span>
+	
+</div>
+
+
+	</div>
+	<div class="col-md-4 col-md-offset-2">
+		
+	
+			
+ 			<div class="bdsharebuttonbox"><a href="#" class="bds_more" data-cmd="more"></a><a title="分享到QQ空间" href="#" class="bds_qzone" data-cmd="qzone"></a><a title="分享到新浪微博" href="#" class="bds_tsina" data-cmd="tsina"></a><a title="分享到腾讯微博" href="#" class="bds_tqq" data-cmd="tqq"></a><a title="分享到人人网" href="#" class="bds_renren" data-cmd="renren"></a><a title="分享到微信" href="#" class="bds_weixin" data-cmd="weixin"></a></div>
+<script>window._bd_share_config={"common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdPic":"","bdStyle":"0","bdSize":"16"},"share":{},"image":{"viewList":["qzone","tsina","tqq","renren","weixin"],"viewText":"分享到：","viewSize":"16"}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];</script>
+
+
+	
+
+
+	</div>
+</div>
+<div>
+<ul class="pager">
+	
+	<li><a href="/code/algorithm/2014/03/27/my-algorithm-list.html" title="我的算法列表">上一页</a></li>
+	
+
+	
+	<li><a href="/code/java/2014/03/14/java-concurrency-note2-monitor.html" title="Java并行编程笔记2: Monitor">下一页</a></li>
+	
+</ul>
+</div>
+
+
+				</div>
+				<!-- sidebar -->
+				<div class="col-sm-3 col-sm-offset-1">
+					<div class="sidebar-module sidebar-module-inset">
+						<a href="/rss.xml" target="_blank"><img style="width:34px" src="/assets/images//feed_icon_128.png"></a>
+						
+						
+						<a href="mailto:highsp.cn@gmail.com" target="_blank"><img style="width:38px" src="/assets/images//gmail_icon_128.png"></a>
+						
+					</div>
+
+					<div class="sidebar-module" >
+						<h4>最新文章</h4>
+						<ol class="list-unstyled">
+							
+							<li><a href="/scalability/2014/05/06/scalable-architecture-patterns.html">可伸缩性系统架构</a></li>
+							
+							<li><a href="/scalability/2014/05/02/secret-to-10m-concurrency.html">如何做到千万并发连接</a></li>
+							
+							<li><a href="/code/java/2014/04/03/java-history5-jvm.html">Java历史: JVM发展史</a></li>
+							
+							<li><a href="/code/java/2014/04/02/java-history4-org.html">Java历史: 十大组织</a></li>
+							
+							<li><a href="/code/java/2014/04/02/java-history3-people.html">Java历史: 十大牛人</a></li>
+							
+							<li><a href="/code/java/2014/04/02/java-history2-products.html">Java历史: 十大产品</a></li>
+							
+							<li><a href="/code/java/2014/04/02/java-history1-brief.html">Java历史</a></li>
+							
+							<li><a href="/algorithm/2014/04/01/mostest-important-algorithms.html">最重要的34个计算机算法</a></li>
+							
+							<li><a href="/code/algorithm/2014/04/01/mostest-important-algorithms.html">最重要的34个计算机算法</a></li>
+							
+							<li><a href="/internet/2014/03/28/deep-inside-chinese-internet.html">解密中国互联网</a></li>
+							
+						</ol>
+					</div>
+
+					<div class="sidebar-module" >
+						<h4>标签</h4>
+						
+						
+						<a href="/tags.html#"><span class="label label-default">github</span></a>
+						
+						<a href="/tags.html#1-ref"><span class="label label-primary">Java</span></a>
+						
+						<a href="/tags.html#2-ref"><span class="label label-success">并行编程</span></a>
+						
+						<a href="/tags.html#3-ref"><span class="label label-info">algorithm</span></a>
+						
+						<a href="/tags.html#4-ref"><span class="label label-warning">互联网</span></a>
+						
+						<a href="/tags.html#5-ref"><span class="label label-danger">历史</span></a>
+						
+						<a href="/tags.html#6-ref"><span class="label label-default">可伸缩性</span></a>
+						
+						<a href="/tags.html#7-ref"><span class="label label-primary">C10M</span></a>
+						
+						<a href="/tags.html#8-ref"><span class="label label-success">scalability</span></a>
+						
+						<a href="/tags.html#9-ref"><span class="label label-info">pattern</span></a>
+						
+						<a href="/tags.html#10-ref"><span class="label label-warning">architecture</span></a>
+						
+					</div>
+
+					<div class="sidebar-module">
+						<h4>归档</h4>
+						<ol class="list-unstyled">
+							
+							
+							
+							
+							
+							
+							
+							
+
+							
+								
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+								<li><a href="/scalability/2014/05/06/scalable-architecture-patterns.html">2014 05(2)</a></li>
+								
+								
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+								<li><a href="/code/java/2014/04/03/java-history5-jvm.html">2014 04(7)</a></li>
+								
+								
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+								<li><a href="/internet/2014/03/28/deep-inside-chinese-internet.html">2014 03(6)</a></li>
+								
+								
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+								<li><a href="/code/algorithm/2014/02/01/how-to-encrypt-github.html">2014 02(2)</a></li>
+								
+								
+							
+
+							
+							
+							
+						</ol>
+					</div>
+
+					
+					<!-- sidebar -->
+				</div>
+			</div>
+
+			<hr>
+
+			<footer>
+			
+			
+
+
+			<p>&copy; <script>document.write(new Date().getFullYear());</script> 带码的世界 <a href="/">http://highsp.cn</a></p>
+			<p><a href="http://highsp.cn/sitemap.xml">站点地图</a></p>
+			</footer>
+		</div> <!-- /container -->
+		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+		<script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+		
+	
+			
+ 			<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	 m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	 })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+	  ga('create', 'UA-42967195-2', 'highsp.cn');
+	  ga('send', 'pageview');
+</script>
+
+	
+
+
+	</body>
+</html>

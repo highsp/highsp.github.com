@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="zh">
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		
+		<meta name="description" content="最重要的34个计算机算法">
+		
+		<meta name="author" content="">
+		
+		<meta name="keywords" content="algorithm">
+		
+		<link rel="shortcut icon" href="/assets/images//favicon.ico">
+
+		
+			
+		
+		
+
+
+		<title>最重要的34个计算机算法</title>
+
+		<link rel='alternate' type="application/rss+xml" title="RSS 2.0 - Articiles" href="http://highsp.cn/rss.xml">
+		<link rel='alternate' type="application/atom+xml" title="Atom - Articiles" href="http://highsp.cn/atom.xml">
+		<!-- Bootstrap core CSS -->
+		<link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+		<link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap-theme.min.css" rel="stylesheet">
+
+		<!-- Custom styles for this template -->
+		<link href="/assets/css//main.css" rel="stylesheet">
+
+		<!-- Just for debugging purposes. Don't actually copy this line! -->
+		<!--[if lt IE 9]><script src="/assets/js//ie8-responsive-file-warning.js"></script><![endif]-->
+
+		<!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+		<!--[if lt IE 9]>
+		<script src="//oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+		<script src="//oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+		<![endif]-->
+		
+	</head>
+
+	<body>
+		<!-- Navigation bar -->
+		<div class="navbar blue-bg navbar-fixed-top" role="navigation">
+			<div class="container">
+				<div class="navbar-header">
+					<button type="button" class="navbar-toggle label-primary" data-toggle="collapse" data-target=".navbar-collapse">
+						<span class="sr-only">Toggle navigation</span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+					</button>
+
+					
+					
+
+
+					<a class="navbar-brand" href="/#">带码的世界</a>
+				</div>
+				<div class="navbar-collapse collapse">
+					<ul class="nav navbar-nav">
+						
+						<li><a href="/">首页</a></li>
+						
+
+						
+
+						
+							
+								
+							
+
+							
+								
+								
+
+
+								<li class=""><a href="/algorithm">算法理论 <span class="badge">6</span></a></li>
+							
+						
+							
+								
+							
+
+							
+								
+									
+									
+
+
+									<li class="dropdown active">
+									<a href="#" class="dropdown-toggle" data-toggle="dropdown">带码的世界 <span class="badge">11</span><b class="caret"></b></a>
+									<ul class="dropdown-menu">
+										
+										
+											
+												
+												
+
+
+
+												
+												
+												
+
+
+												<li><a href="/code/java">java <span class="badge">8</span></a></li>
+												
+											
+										
+											
+											
+										
+											
+											
+										
+											
+											
+										
+											
+											
+										
+											
+												
+												
+
+
+
+												
+												
+												
+
+
+												<li><a href="/code/algorithm">算法理论 <span class="badge">6</span></a></li>
+												
+											
+										
+											
+											
+										
+											
+											
+										
+											
+											
+										
+											
+											
+										
+											
+											
+										
+									</ul>
+									</li>
+								
+							
+						
+							
+								
+							
+
+							
+								
+							
+						
+							
+								
+							
+
+							
+								
+								
+
+
+								<li class=""><a href="/internet">互联网 <span class="badge">1</span></a></li>
+							
+						
+							
+								
+							
+
+							
+								
+								
+
+
+								<li class=""><a href="/scalability">可扩展性 <span class="badge">2</span></a></li>
+							
+						
+					</ul>
+					
+	
+			
+ 			<form class="navbar-form navbar-right" role="form" action="https://www.google.com.hk/search" target="_blank">
+	<div class="form-group">
+	<input type="text" class="form-control" placeholder="关键字" name="query" autocomplete="off">
+	<input type="hidden" value="" name="as_sitesearch"> 
+	</div>
+	<button class="btn btn-default" type="submit">搜索</button>
+</form>
+
+	
+
+
+					
+				</div><!--/.navbar-collapse -->
+			</div>
+		</div>
+
+		<!-- main page -->
+		<div class="container main-page">
+			<div class="row">
+				<div class="col-sm-8">
+					<h1 class="page-header">最重要的34个计算机算法
+	<br>
+	
+	
+	<span class="label label-info font-h6">
+	<date class="date-pub" title="2014-04-01T00:00:00+08:00" datetime="2014-04-01T00:00:00+08:00" pubdate>
+	<span class="month"><abbr>April</abbr></span>
+	<span class="day">01</span>
+	<span class="year">2014</span>
+	</date>
+	
+</span>
+
+</h1>
+<div class="lead">
+<ol>
+<li><p>A* 搜索算法——图形搜索算法，从给定起点到给定终点计算出路径。其中使用了一种启发式的估算，为每个节点估算通过该节点的最佳路径，并以之为各个地点排定次序。算法以得到的次序访问这些节点。因此，A*搜索算法是最佳优先搜索的范例。</p></li>
+<li><p>集束搜索（又名定向搜索，Beam Search）——最佳优先搜索算法的优化。使用启发式函数评估它检查的每个节点的能力。不过，集束搜索只能在每个深度中发现最前面的m个最符合条件的节点，m是固定数字——集束的宽度。</p></li>
+<li><p>二分查找（Binary Search）——在线性数组中找特定值的算法，每个步骤去掉一半不符合要求的数据。</p></li>
+<li><p>分支界定算法（Branch and Bound）——在多种最优化问题中寻找特定最优化解决方案的算法，特别是针对离散、组合的最优化。</p></li>
+<li><p>Buchberger算法——一种数学算法，可将其视为针对单变量最大公约数求解的欧几里得算法和线性系统中高斯消元法的泛化。</p></li>
+<li><p>数据压缩——采取特定编码方案，使用更少的字节数（或是其他信息承载单元）对信息编码的过程，又叫来源编码。</p></li>
+<li><p>Diffie-Hellman密钥交换算法——一种加密协议，允许双方在事先不了解对方的情况下，在不安全的通信信道中，共同建立共享密钥。该密钥以后可与一个对称密码一起，加密后续通讯。</p></li>
+<li><p>Dijkstra算法——针对没有负值权重边的有向图，计算其中的单一起点最短算法。</p></li>
+<li><p>离散微分算法（Discrete differentiation）</p></li>
+<li><p>动态规划算法（Dynamic Programming）——展示互相覆盖的子问题和最优子架构算法</p></li>
+<li><p>欧几里得算法（Euclidean algorithm）——计算两个整数的最大公约数。最古老的算法之一，出现在公元前300前欧几里得的《几何原本》。</p></li>
+<li><p>期望-最大算法（Expectation-maximization algorithm，又名EM-Training）——在统计计算中，期望-最大算法在概率模型中寻找可能性最大的参数估算值，其中模型依赖于未发现的潜在变量。EM在两个步骤中交替计算，第一步是计算期望，利用对隐藏变量的现有估计值，计算其最大可能估计值；第二步是最大化，最大化在第一步上求得的最大可能值来计算参数的值。</p></li>
+<li><p>快速傅里叶变换（Fast Fourier transform，FFT）——计算离散的傅里叶变换（DFT）及其反转。该算法应用范围很广，从数字信号处理到解决偏微分方程，到快速计算大整数乘积。</p></li>
+<li><p>梯度下降（Gradient descent）——一种数学上的最优化算法。</p></li>
+<li><p>哈希算法（Hashing）</p></li>
+<li><p>堆排序（Heaps）</p></li>
+<li><p>Karatsuba乘法——需要完成上千位整数的乘法的系统中使用，比如计算机代数系统和大数程序库，如果使用长乘法，速度太慢。该算法发现于1962年。</p></li>
+<li><p>LLL算法（Lenstra-Lenstra-Lovasz  lattice reduction）——以格规约（lattice）基数为输入，输出短正交向量基数。LLL算法在以下公共密钥加密方法中有大量使用：背包加密系统（knapsack）、有特定设置的RSA加密等等。</p></li>
+<li><p>最大流量算法（Maximum flow）——该算法试图从一个流量网络中找到最大的流。它优势被定义为找到这样一个流的值。最大流问题可以看作更复杂的网络流问题的特定情况。最大流与网络中的界面有关，这就是最大流-最小截定理（Max-flow min-cut theorem）。Ford-Fulkerson 能找到一个流网络中的最大流。</p></li>
+<li><p>合并排序（Merge Sort）</p></li>
+<li><p>牛顿法（Newton&#39;s method）——求非线性方程（组）零点的一种重要的迭代法。</p></li>
+<li><p>Q-learning学习算法——这是一种通过学习动作值函数（action-value function）完成的强化学习算法，函数采取在给定状态的给定动作，并计算出期望的效用价值，在此后遵循固定的策略。Q-leanring的优势是，在不需要环境模型的情况下，可以对比可采纳行动的期望效用。</p></li>
+<li><p>两次筛法（Quadratic Sieve）——现代整数因子分解算法，在实践中，是目前已知第二快的此类算法（仅次于数域筛法Number Field Sieve）。对于110位以下的十位整数，它仍是最快的，而且都认为它比数域筛法更简单。</p></li>
+<li><p>RANSAC——是“RANdom SAmple Consensus”的缩写。该算法根据一系列观察得到的数据，数据中包含异常值，估算一个数学模型的参数值。其基本假设是：数据包含非异化值，也就是能够通过某些模型参数解释的值，异化值就是那些不符合模型的数据点。</p></li>
+<li><p>RSA——公钥加密算法。首个适用于以签名作为加密的算法。RSA在电商行业中仍大规模使用，大家也相信它有足够安全长度的公钥。</p></li>
+<li><p>Schönhage-Strassen算法——在数学中，Schönhage-Strassen算法是用来完成大整数的乘法的快速渐近算法。其算法复杂度为：O(N log(N) log(log(N)))，该算法使用了傅里叶变换。</p></li>
+<li><p>单纯型算法（Simplex Algorithm）——在数学的优化理论中，单纯型算法是常用的技术，用来找到线性规划问题的数值解。线性规划问题包括在一组实变量上的一系列线性不等式组，以及一个等待最大化（或最小化）的固定线性函数。</p></li>
+<li><p>奇异值分解（Singular value decomposition，简称SVD）——在线性代数中，SVD是重要的实数或复数矩阵的分解方法，在信号处理和统计中有多种应用，比如计算矩阵的伪逆矩阵（以求解最小二乘法问题）、解决超定线性系统（overdetermined linear systems）、矩阵逼近、数值天气预报等等。</p></li>
+<li><p>求解线性方程组（Solving a system of linear equations）——线性方程组是数学中最古老的问题，它们有很多应用，比如在数字信号处理、线性规划中的估算和预测、数值分析中的非线性问题逼近等等。求解线性方程组，可以使用高斯—约当消去法（Gauss-Jordan elimination），或是柯列斯基分解（ Cholesky decomposition）。</p></li>
+<li><p>Strukturtensor算法——应用于模式识别领域，为所有像素找出一种计算方法，看看该像素是否处于同质区域（ homogenous region），看看它是否属于边缘，还是是一个顶点。</p></li>
+<li><p>合并查找算法（Union-find）——给定一组元素，该算法常常用来把这些元素分为多个分离的、彼此不重合的组。不相交集（disjoint-set）的数据结构可以跟踪这样的切分方法。合并查找算法可以在此种数据结构上完成两个有用的操作：</p></li>
+<li><p>查找：判断某特定元素属于哪个组。</p></li>
+<li><p>合并：联合或合并两个组为一个组。</p></li>
+<li><p>维特比算法（Viterbi algorithm）——寻找隐藏状态最有可能序列的动态规划算法，这种序列被称为维特比路径，其结果是一系列可以观察到的事件，特别是在隐藏的Markov模型中。</p></li>
+</ol>
+
+</div>
+
+
+<div class="row">
+	<div class="col-md-6">
+		
+<div>
+	<span>标签:</span>
+	
+	<span class="label label-default">algorithm</span>
+	
+</div>
+
+
+	</div>
+	<div class="col-md-4 col-md-offset-2">
+		
+	
+			
+ 			<div class="bdsharebuttonbox"><a href="#" class="bds_more" data-cmd="more"></a><a title="分享到QQ空间" href="#" class="bds_qzone" data-cmd="qzone"></a><a title="分享到新浪微博" href="#" class="bds_tsina" data-cmd="tsina"></a><a title="分享到腾讯微博" href="#" class="bds_tqq" data-cmd="tqq"></a><a title="分享到人人网" href="#" class="bds_renren" data-cmd="renren"></a><a title="分享到微信" href="#" class="bds_weixin" data-cmd="weixin"></a></div>
+<script>window._bd_share_config={"common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdPic":"","bdStyle":"0","bdSize":"16"},"share":{},"image":{"viewList":["qzone","tsina","tqq","renren","weixin"],"viewText":"分享到：","viewSize":"16"}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];</script>
+
+
+	
+
+
+	</div>
+</div>
+<div>
+<ul class="pager">
+	
+	<li><a href="/algorithm/2014/04/01/mostest-important-algorithms.html" title="最重要的34个计算机算法">上一页</a></li>
+	
+
+	
+	<li><a href="/internet/2014/03/28/deep-inside-chinese-internet.html" title="解密中国互联网">下一页</a></li>
+	
+</ul>
+</div>
+
+
+				</div>
+				<!-- sidebar -->
+				<div class="col-sm-3 col-sm-offset-1">
+					<div class="sidebar-module sidebar-module-inset">
+						<a href="/rss.xml" target="_blank"><img style="width:34px" src="/assets/images//feed_icon_128.png"></a>
+						
+						
+						<a href="mailto:highsp.cn@gmail.com" target="_blank"><img style="width:38px" src="/assets/images//gmail_icon_128.png"></a>
+						
+					</div>
+
+					<div class="sidebar-module" >
+						<h4>最新文章</h4>
+						<ol class="list-unstyled">
+							
+							<li><a href="/scalability/2014/05/06/scalable-architecture-patterns.html">可伸缩性系统架构</a></li>
+							
+							<li><a href="/scalability/2014/05/02/secret-to-10m-concurrency.html">如何做到千万并发连接</a></li>
+							
+							<li><a href="/code/java/2014/04/03/java-history5-jvm.html">Java历史: JVM发展史</a></li>
+							
+							<li><a href="/code/java/2014/04/02/java-history4-org.html">Java历史: 十大组织</a></li>
+							
+							<li><a href="/code/java/2014/04/02/java-history3-people.html">Java历史: 十大牛人</a></li>
+							
+							<li><a href="/code/java/2014/04/02/java-history2-products.html">Java历史: 十大产品</a></li>
+							
+							<li><a href="/code/java/2014/04/02/java-history1-brief.html">Java历史</a></li>
+							
+							<li><a href="/algorithm/2014/04/01/mostest-important-algorithms.html">最重要的34个计算机算法</a></li>
+							
+							<li><a href="/code/algorithm/2014/04/01/mostest-important-algorithms.html">最重要的34个计算机算法</a></li>
+							
+							<li><a href="/internet/2014/03/28/deep-inside-chinese-internet.html">解密中国互联网</a></li>
+							
+						</ol>
+					</div>
+
+					<div class="sidebar-module" >
+						<h4>标签</h4>
+						
+						
+						<a href="/tags.html#"><span class="label label-default">github</span></a>
+						
+						<a href="/tags.html#1-ref"><span class="label label-primary">Java</span></a>
+						
+						<a href="/tags.html#2-ref"><span class="label label-success">并行编程</span></a>
+						
+						<a href="/tags.html#3-ref"><span class="label label-info">algorithm</span></a>
+						
+						<a href="/tags.html#4-ref"><span class="label label-warning">互联网</span></a>
+						
+						<a href="/tags.html#5-ref"><span class="label label-danger">历史</span></a>
+						
+						<a href="/tags.html#6-ref"><span class="label label-default">可伸缩性</span></a>
+						
+						<a href="/tags.html#7-ref"><span class="label label-primary">C10M</span></a>
+						
+						<a href="/tags.html#8-ref"><span class="label label-success">scalability</span></a>
+						
+						<a href="/tags.html#9-ref"><span class="label label-info">pattern</span></a>
+						
+						<a href="/tags.html#10-ref"><span class="label label-warning">architecture</span></a>
+						
+					</div>
+
+					<div class="sidebar-module">
+						<h4>归档</h4>
+						<ol class="list-unstyled">
+							
+							
+							
+							
+							
+							
+							
+							
+
+							
+								
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+								<li><a href="/scalability/2014/05/06/scalable-architecture-patterns.html">2014 05(2)</a></li>
+								
+								
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+								<li><a href="/code/java/2014/04/03/java-history5-jvm.html">2014 04(7)</a></li>
+								
+								
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+								<li><a href="/internet/2014/03/28/deep-inside-chinese-internet.html">2014 03(6)</a></li>
+								
+								
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+
+							
+							
+							
+							
+							
+							
+
+							
+							
+								<li><a href="/code/algorithm/2014/02/01/how-to-encrypt-github.html">2014 02(2)</a></li>
+								
+								
+							
+
+							
+							
+							
+						</ol>
+					</div>
+
+					
+					<!-- sidebar -->
+				</div>
+			</div>
+
+			<hr>
+
+			<footer>
+			
+			
+
+
+			<p>&copy; <script>document.write(new Date().getFullYear());</script> 带码的世界 <a href="/">http://highsp.cn</a></p>
+			<p><a href="http://highsp.cn/sitemap.xml">站点地图</a></p>
+			</footer>
+		</div> <!-- /container -->
+		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+		<script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+		
+	
+			
+ 			<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	 m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	 })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+	  ga('create', 'UA-42967195-2', 'highsp.cn');
+	  ga('send', 'pageview');
+</script>
+
+	
+
+
+	</body>
+</html>
